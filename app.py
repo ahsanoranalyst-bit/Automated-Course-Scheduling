@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import random
 from datetime import datetime, timedelta
-from fpdf import FPDF
+from fpdf import PDF
 import io
 
 # 1. Page Config
@@ -135,3 +135,4 @@ if check_license():
                 # PDF بٹن
                 pdf_data = create_pdf("Global Excellence Academy", cls, df)
                 st.download_button(label=f"📥 Download PDF for {cls}", data=pdf_data, file_name=f"{cls}_Timetable.pdf", mime="application/pdf")
+
