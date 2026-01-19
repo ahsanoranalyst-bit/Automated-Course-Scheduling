@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import random
@@ -173,4 +174,18 @@ if check_license():
                 master_data.append(row)
             
             df_master = pd.DataFrame(master_data).set_index("Time Slot")
-            st.dataframe(df_master
+            st.dataframe(df_master, use_container_width=True)
+            
+            mp = create_pdf(school_name, f"MASTER STAFF CHART - {d}", "Staff Duty Distribution", df_master)
+            if mp: st.download_button(f"📥 Print {d} Master Chart", mp, f"Master_{d}.pdf", "application/pdf", key=f"m_{d}")
+
+        # --- SECTION 4: INDIVIDUAL DUTY ---
+        st.markdown("---")
+        st.header("👨‍🏫 Section 4: Teacher Individual Duties")
+        for t in all_staff:
+            t_duty = {d: [master.get((d, s["time"], t), "FREE") if not s["brk"] else "BREAK" for s in slots] for d in days}
+            df_t = pd.DataFrame(t_duty, index=[s['time'] for s in slots])
+            with st.expander(f"Duty: {t}"):
+                st.table(df_t)
+                tp = create_pdf(school_name, "TEACHER DUTY", f"Staff: {t}", df_t)
+                st.download_button(f"Print {t} PDF", tp, f"{t}.pdf", "application/pdf", key=f"tb_{t}")
