@@ -5,11 +5,18 @@ from datetime import datetime, timedelta
 from fpdf import FPDF
 import io
 
-# 1. Page Configuration
-st.set_page_config(page_title="Global Excellence Academy", layout="wide")
-st.markdown("<style>#MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}</style>", unsafe_allow_html=True)
+# 1. Page Configuration & Professional UI
+st.set_page_config(page_title="Global Excellence Academy - ERP", layout="wide")
+st.markdown("""
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    .stButton>button { background-color: #007bff; color: white; border-radius: 5px; }
+    </style>
+    """, unsafe_allow_html=True)
 
-# 2. Security & License (Profit Level 200)
+# 2. Security & License Logic (Profit Level 200)
 MASTER_KEY = "AhsanPro200"
 EXPIRY_DATE = "2026-12-31"
 
@@ -17,18 +24,25 @@ def check_license():
     if 'authenticated' not in st.session_state:
         st.session_state['authenticated'] = False
     if not st.session_state['authenticated']:
-        st.title("🔐 Software Activation")
-        user_key = st.text_input("Enter License Key", type="password")
-        if st.button("Activate"):
+        st.title("🔐 Enterprise Software Activation")
+        st.info("Global Excellence Academy - Timetable Management System")
+        user_key = st.text_input("Please enter your Master License Key:", type="password")
+        if st.button("Activate System"):
             if user_key == MASTER_KEY:
-                st.session_state['authenticated'] = True
-                st.rerun()
+                current_date = datetime.now().date()
+                expiry = datetime.strptime(EXPIRY_DATE, "%Y-%m-%d").date()
+                if current_date <= expiry:
+                    st.session_state['authenticated'] = True
+                    st.success("License Verified! Welcome, Administrator.")
+                    st.rerun()
+                else:
+                    st.error("License Expired. Please contact your provider for renewal.")
             else:
-                st.error("Invalid Key")
+                st.error("Invalid License Key. Access Denied.")
         return False
     return True
 
-# Professional PDF Generation Function
+# 3. PDF Generator Function (Optimized for Printing)
 def create_pdf(header_title, sub_title, df):
     pdf = FPDF()
     pdf.add_page()
@@ -36,128 +50,140 @@ def create_pdf(header_title, sub_title, df):
     pdf.cell(190, 10, header_title, ln=True, align='C')
     pdf.set_font("Arial", 'B', 12)
     pdf.cell(190, 10, sub_title, ln=True, align='C')
-    pdf.ln(5)
+    pdf.ln(10)
     
-    pdf.set_font("Arial", 'B', 8)
-    cols = ["Time Slot"] + list(df.columns)
-    for col in cols:
-        pdf.cell(30, 10, col, 1, 0, 'C')
+    # Header
+    pdf.set_font("Arial", 'B', 9)
+    column_width = 190 / (len(df.columns) + 1)
+    pdf.cell(column_width, 10, "Time/Period", 1, 0, 'C')
+    for col in df.columns:
+        pdf.cell(column_width, 10, col, 1, 0, 'C')
     pdf.ln()
     
-    pdf.set_font("Arial", '', 7)
+    # Body
+    pdf.set_font("Arial", '', 8)
     for i in range(len(df)):
-        pdf.cell(30, 10, str(df.index[i]), 1, 0, 'C')
+        pdf.cell(column_width, 10, str(df.index[i]), 1, 0, 'C')
         for col in df.columns:
-            val = str(df[col][i]).replace('\n', ' ')
-            pdf.cell(30, 10, val, 1, 0, 'C')
+            content = str(df[col][i]).replace('\n', ' ')
+            pdf.cell(column_width, 10, content, 1, 0, 'C')
         pdf.ln()
     return pdf.output(dest='S').encode('latin-1')
 
+# 4. Main Application
 if check_license():
     st.title("🏫 Global Excellence Academy")
-    st.subheader("Enterprise Resource Planning (ERP) - Timetable Module")
+    st.subheader("Professional Academic Scheduling System (ERP)")
 
+    # Sidebar: Comprehensive Controls
     with st.sidebar:
-        st.header("⚙️ General Settings")
-        days = st.multiselect("Working Days", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
-        school_start = st.time_input("School Opening Time", datetime.strptime("08:00", "%H:%M"))
-        period_duration = st.number_input("Period Duration (Mins)", 30, 60, 45)
+        st.header("⚙️ System Configuration")
+        days = st.multiselect("Select Working Days", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
+        
         st.divider()
-        st.header("☕ Break Management")
-        after_period = st.number_input("Break After Period No.", 1, 10, 4)
-        break_duration = st.number_input("Break Time (Mins)", 10, 60, 30)
+        st.subheader("⏰ Timing Control")
+        school_start = st.time_input("School Opening Time", datetime.strptime("08:00", "%H:%M"))
+        school_end = st.time_input("School Closing Time", datetime.strptime("14:00", "%H:%M"))
+        period_duration = st.number_input("One Period Duration (Mins)", 10, 120, 45)
+        
+        st.divider()
+        st.subheader("☕ Break Management")
+        after_period = st.number_input("Lunch/Break After Period No.", 1, 10, 4)
+        break_duration = st.number_input("Break Length (Mins)", 10, 60, 30)
 
-    # Section-wise Tab Management
-    st.markdown("### 🏛️ Faculty & Student Groups")
+    # Main Panel: Section Wise Inputs
+    st.markdown("### 👨‍🏫 Faculty & Section Management")
     tab1, tab2, tab3 = st.tabs(["👶 Primary Section", "🏫 Secondary Section", "🎓 College Section"])
     
     with tab1:
-        c1, c2 = st.columns(2)
-        pri_classes = c1.text_area("Primary Classes", "Grade 1, Grade 2, Grade 3")
-        pri_teachers = c2.text_area("Primary Faculty", "Ms. Fatima, Ms. Zainab, Mr. Ali")
+        col1, col2 = st.columns(2)
+        pri_classes = col1.text_area("Primary Classes", "Grade 1, Grade 2, Grade 3, Grade 4, Grade 5")
+        pri_teachers = col2.text_area("Primary Faculty", "Ms. Fatima, Ms. Zainab, Mr. Ali, Ms. Sara")
+    
     with tab2:
-        c1, c2 = st.columns(2)
-        sec_classes = c1.text_area("Secondary Classes", "Grade 6, Grade 7, Grade 8")
-        sec_teachers = c2.text_area("Secondary Faculty", "Mr. Sajid, Ms. Hina, Mr. Junaid")
+        col1, col2 = st.columns(2)
+        sec_classes = col1.text_area("Secondary Classes", "Grade 6, Grade 7, Grade 8, Grade 9, Grade 10")
+        sec_teachers = col2.text_area("Secondary Faculty", "Mr. Sajid, Ms. Hina, Mr. Junaid, Mr. Hassan")
+    
     with tab3:
-        c1, c2 = st.columns(2)
-        coll_classes = c1.text_area("College Classes", "FSc Medical, FSc Engineering, A-Levels")
-        coll_teachers = c2.text_area("College Faculty", "Dr. Smith, Prof. Ahmed, Dr. Zehra")
+        col1, col2 = st.columns(2)
+        coll_classes = col1.text_area("College Classes", "FSc Pre-Med, FSc Pre-Eng, A-Levels, O-Levels")
+        coll_teachers = col2.text_area("College/Specialist Faculty", "Dr. Smith, Prof. Ahmed, Dr. Zehra, Prof. Khan")
 
-    subjects_input = st.text_input("Academic Subjects (Comma separated)", "Mathematics, Physics, English, Urdu, Science, Islamiyat")
+    common_subjects = st.text_input("List of Academic Subjects (Comma Separated)", "Mathematics, Physics, Chemistry, English, Urdu, Islamiyat, Science")
 
-    if st.button("🚀 Generate Master Timetable & PDF Reports"):
-        # Organization Logic
+    if st.button("🚀 Generate Optimized Master Schedules"):
+        # Formatting Inputs
         sections = [
             {"name": "Primary", "classes": [c.strip() for c in pri_classes.split(",")], "teachers": [t.strip() for t in pri_teachers.split(",")]},
             {"name": "Secondary", "classes": [c.strip() for c in sec_classes.split(",")], "teachers": [t.strip() for t in sec_teachers.split(",")]},
             {"name": "College", "classes": [c.strip() for c in coll_classes.split(",")], "teachers": [t.strip() for t in coll_teachers.split(",")]}
         ]
-        subjects_list = [s.strip() for s in subjects_input.split(",")]
+        subjects = [s.strip() for s in common_subjects.split(",")]
         
-        master_data = {} # (day, time, teacher) -> class_subject
-        all_teachers = []
-        for s in sections: all_teachers.extend(s["teachers"])
-
-        # Time Calculation Logic
+        # Generation Logic Setup
+        master_registry = {} # Tracking: (day, time_slot, teacher)
         time_slots = []
         curr_time = datetime.combine(datetime.today(), school_start)
-        for i in range(1, 10):
-            start_t = curr_time.strftime('%I:%M%p')
-            end_t_obj = curr_time + timedelta(minutes=period_duration)
-            end_t = end_t_obj.strftime('%I:%M%p')
-            time_slots.append({"label": f"Period {i}", "time": f"{start_t}-{end_t}", "is_break": False})
-            curr_time = end_t_obj
-            if i == after_period:
+        closing = datetime.combine(datetime.today(), school_end)
+        
+        p_count = 1
+        while curr_time + timedelta(minutes=period_duration) <= closing:
+            start_s = curr_time.strftime('%I:%M %p')
+            end_t = curr_time + timedelta(minutes=period_duration)
+            time_slots.append({"label": f"Period {p_count}", "time": f"{start_s}-{end_t.strftime('%I:%M %p')}", "is_break": False})
+            curr_time = end_t
+            if p_count == after_period:
                 b_end = curr_time + timedelta(minutes=break_duration)
-                time_slots.append({"label": "BREAK", "time": f"{curr_time.strftime('%I:%M%p')}-{b_end.strftime('%I:%M%p')}", "is_break": True})
+                time_slots.append({"label": "BREAK", "time": f"{curr_time.strftime('%I:%M %p')}-{b_end.strftime('%I:%M %p')}", "is_break": True})
                 curr_time = b_end
+            p_count += 1
 
-        # --- 1. Class-Wise Timetables ---
-        st.header("📋 Student Class Timetables")
+        # --- Generate Class Timetables ---
+        st.header("📋 Class-Wise Schedules")
         for sec in sections:
             st.subheader(f"Section: {sec['name']}")
             for cls in sec["classes"]:
-                class_schedule = {}
+                cls_data = {}
                 for day in days:
-                    day_slots = []
+                    day_plan = []
                     for slot in time_slots:
-                        if slot["is_break"]:
-                            day_slots.append("☕ BREAK")
+                        if slot["is_break"]: day_plan.append("☕ BREAK")
                         else:
-                            available = [t for t in sec["teachers"] if (day, slot["time"], t) not in master_data]
-                            if available:
-                                teacher = random.choice(available)
-                                subj = random.choice(subjects_list)
-                                master_data[(day, slot["time"], teacher)] = f"{cls} ({subj})"
-                                day_slots.append(f"{teacher}\n({subj})")
-                            else:
-                                day_slots.append("❌ NO FACULTY")
-                    class_schedule[day] = day_slots
+                            free_teachers = [t for t in sec["teachers"] if (day, slot["time"], t) not in master_registry]
+                            if free_teachers:
+                                t_assigned = random.choice(free_teachers)
+                                s_assigned = random.choice(subjects)
+                                master_registry[(day, slot["time"], t_assigned)] = f"{cls} ({s_assigned})"
+                                day_plan.append(f"{t_assigned}\n({s_assigned})")
+                            else: day_plan.append("❌ NO STAFF")
+                    cls_data[day] = day_plan
                 
-                df_cls = pd.DataFrame(class_schedule, index=[s['time'] for s in time_slots])
+                df_cls = pd.DataFrame(cls_data, index=[s['time'] for s in time_slots])
                 st.write(f"**Timetable for {cls}**")
                 st.table(df_cls)
-                pdf_bytes = create_pdf("Global Excellence Academy", f"Class Timetable: {cls}", df_cls)
+                pdf_bytes = create_pdf("Global Excellence Academy", f"Class Schedule: {cls}", df_cls)
                 st.download_button(f"📥 Download {cls} PDF", pdf_bytes, f"{cls}_Schedule.pdf", "application/pdf")
 
-        # --- 2. Teacher-Wise Timetables ---
+        # --- Generate Teacher Duty Charts ---
         st.divider()
-        st.header("👨‍🏫 Faculty Individual Duties")
-        for teacher in all_teachers:
-            teacher_schedule = {}
+        st.header("👨‍🏫 Faculty Personal Duty Charts")
+        all_faculty = []
+        for s in sections: all_faculty.extend(s["teachers"])
+        
+        for teacher in all_faculty:
+            t_data = {}
             for day in days:
-                t_day_slots = []
+                t_plan = []
                 for slot in time_slots:
-                    if slot["is_break"]:
-                        t_day_slots.append("RECESSS")
+                    if slot["is_break"]: t_plan.append("RECESSS")
                     else:
-                        duty = master_data.get((day, slot["time"], teacher), "FREE PERIOD")
-                        t_day_slots.append(duty)
-                teacher_schedule[day] = t_day_slots
+                        assignment = master_registry.get((day, slot["time"], teacher), "FREE PERIOD")
+                        t_plan.append(assignment)
+                t_data[day] = t_plan
             
-            df_t = pd.DataFrame(teacher_schedule, index=[s['time'] for s in time_slots])
-            with st.expander(f"View Duty Chart for {teacher}"):
+            df_t = pd.DataFrame(t_data, index=[s['time'] for s in time_slots])
+            with st.expander(f"View Duty Chart: {teacher}"):
                 st.table(df_t)
-                pdf_t_bytes = create_pdf("Global Excellence Academy", f"Teacher Duty Chart: {teacher}", df_t)
+                pdf_t_bytes = create_pdf("Global Excellence Academy", f"Faculty Duty Chart: {teacher}", df_t)
                 st.download_button(f"📥 Download {teacher}'s PDF", pdf_t_bytes, f"Teacher_{teacher}.pdf", "application/pdf")
