@@ -7,7 +7,7 @@ import datetime
 # --- Security & License System ---
 MASTER_KEY = "AHSAN-PRO-200"
 
-st.set_page_config(page_title="AI Timetable Scheduler", layout="wide")
+st.set_page_config(page_title="Optimize Timetable Scheduler", layout="wide")
 
 # Theme Styling
 st.markdown("""
@@ -65,6 +65,7 @@ if st.button("Generate Optimized Timetable"):
     st.table(df)
 
     st.info(f"License Status: Active | Expiry: 2026-12-31")
+
 
 
 
