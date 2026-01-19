@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import streamlit as st
 import pandas as pd
 import random
@@ -136,10 +135,3 @@ if check_license():
                 # PDF بٹن
                 pdf_data = create_pdf("Global Excellence Academy", cls, df)
                 st.download_button(label=f"📥 Download PDF for {cls}", data=pdf_data, file_name=f"{cls}_Timetable.pdf", mime="application/pdf")
-
-
-
-
-
-
-
