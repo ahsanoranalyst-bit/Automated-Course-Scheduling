@@ -4,11 +4,11 @@ import pandas as pd
 import random
 from datetime import datetime, timedelta
 
-# 1. Page Config & Professional Branding
+# 1. Page Config
 st.set_page_config(page_title="Global Excellence Academy", layout="wide")
 st.markdown("<style>#MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}</style>", unsafe_allow_html=True)
 
-# 2. Security & License (Profit Level 200)
+# 2. Security (Profit Level 200)
 MASTER_KEY = "AhsanPro200"
 EXPIRY_DATE = "2026-12-31"
 
@@ -17,7 +17,7 @@ def check_license():
         st.session_state['authenticated'] = False
     if not st.session_state['authenticated']:
         st.title("🔐 Software Activation")
-        user_key = st.text_input("License Key", type="password")
+        user_key = st.text_input("Enter License Key", type="password")
         if st.button("Activate"):
             if user_key == MASTER_KEY:
                 st.session_state['authenticated'] = True
@@ -29,98 +29,86 @@ def check_license():
 
 if check_license():
     st.title("🏫 Global Excellence Academy")
-    st.subheader("Professional Timetable Management System")
+    st.subheader("Smart Section-Based Timetable System")
 
-    # --- Sidebar for School Controls ---
     with st.sidebar:
-        st.header("⚙️ School Timing Settings")
-        
-        days = st.multiselect("Working Days", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
-        
-        # اسکول شروع اور ختم ہونے کا وقت
-        school_start = st.time_input("School Opening Time", datetime.strptime("08:00", "%H:%M"))
-        school_end = st.time_input("School Closing Time (Target)", datetime.strptime("14:00", "%H:%M"))
-        
-        # پیریڈ کا دورانیہ
-        period_duration = st.number_input("Duration of one Period (Minutes)", min_value=10, max_value=120, value=45)
-        
-        st.divider()
-        st.header("☕ Break Settings")
-        after_period = st.number_input("Break After Period No.", 1, 10, 4)
-        break_duration = st.number_input("Break Duration (Minutes)", 10, 60, 30)
+        st.header("⚙️ Settings")
+        days = st.multiselect("Days", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
+        school_start = st.time_input("Start Time", datetime.strptime("08:00", "%H:%M"))
+        period_duration = st.number_input("Period (Mins)", 30, 60, 45)
+        after_period = st.number_input("Break After Period", 1, 10, 4)
+        break_duration = st.number_input("Break (Mins)", 10, 60, 30)
 
-    # --- Data Input ---
-    col1, col2 = st.columns(2)
-    with col1:
-        classes_input = st.text_area("Enter Classes (Comma separated)", "Class 1, Class 2, Class 3, Class 4, Class 5")
-    with col2:
-        teachers_input = st.text_area("Enter Teachers", "Dr. Smith, Prof. Ahmed, Ms. Khan, Mr. Ali, Dr. Zehra")
-        subjects_input = st.text_area("Enter Subjects", "Math, Physics, Chemistry, Biology, English")
+    # --- Section-wise Teacher and Class Inputs ---
+    st.markdown("### 🏛️ Section Management")
+    tab1, tab2, tab3 = st.tabs(["👶 Primary Section", "🏫 Secondary Section", "🎓 College Section"])
 
-    if st.button("🚀 Generate Optimized Timetable"):
-        classes = [c.strip() for c in classes_input.split(",")]
-        teachers = [t.strip() for t in teachers_input.split(",")]
+    with tab1:
+        col1, col2 = st.columns(2)
+        pri_classes = col1.text_area("Primary Classes", "Class 1, Class 2, Class 3, Class 4, Class 5")
+        pri_teachers = col2.text_area("Primary Teachers", "Ms. Fatima, Ms. Zainab, Mr. Ali")
+    
+    with tab2:
+        col1, col2 = st.columns(2)
+        sec_classes = col1.text_area("Secondary Classes", "Class 6, Class 7, Class 8, Class 9, Class 10")
+        sec_teachers = col2.text_area("Secondary Teachers", "Mr. Sajid, Ms. Hina, Mr. Junaid")
+
+    with tab3:
+        col1, col2 = st.columns(2)
+        coll_classes = col1.text_area("College Classes", "FSc Part 1, FSc Part 2, A-Levels")
+        coll_teachers = col2.text_area("College/Expert Teachers", "Dr. Smith, Prof. Ahmed, Dr. Zehra")
+
+    subjects_input = st.text_input("Common Subjects (Comma separated)", "Math, Physics, English, Urdu, Science, Biology")
+
+    if st.button("🚀 Generate Optimized Section-Wise Timetable"):
+        # Process Inputs
+        sections = [
+            {"name": "Primary", "classes": [c.strip() for c in pri_classes.split(",")], "teachers": [t.strip() for t in pri_teachers.split(",")]},
+            {"name": "Secondary", "classes": [c.strip() for c in sec_classes.split(",")], "teachers": [t.strip() for t in sec_teachers.split(",")]},
+            {"name": "College", "classes": [c.strip() for c in coll_classes.split(",")], "teachers": [t.strip() for t in coll_teachers.split(",")]}
+        ]
         subjects = [s.strip() for s in subjects_input.split(",")]
 
-        # --- Time Logic Calculation ---
+        # Time Calculation
         time_slots = []
         curr_time = datetime.combine(datetime.today(), school_start)
-        closing_time = datetime.combine(datetime.today(), school_end)
-        
-        p_idx = 1
-        while curr_time + timedelta(minutes=period_duration) <= closing_time:
-            # Period Time
+        for i in range(1, 9): # 8 Periods
             start_str = curr_time.strftime('%I:%M %p')
             end_t = curr_time + timedelta(minutes=period_duration)
-            end_str = end_t.strftime('%I:%M %p')
-            
-            time_slots.append({"label": f"Period {p_idx}", "time": f"{start_str} - {end_str}", "is_break": False})
+            time_slots.append({"label": f"Period {i}", "time": f"{start_str}-{end_t.strftime('%I:%M %p')}", "is_break": False})
             curr_time = end_t
-            
-            # Insert Break
-            if p_idx == after_period:
-                b_start = curr_time.strftime('%I:%M %p')
-                b_end_t = curr_time + timedelta(minutes=break_duration)
-                b_end_str = b_end_t.strftime('%I:%M %p')
-                time_slots.append({"label": "RECESSS / BREAK", "time": f"{b_start} - {b_end_str}", "is_break": True})
-                curr_time = b_end_t
-            
-            p_idx += 1
+            if i == after_period:
+                b_end = curr_time + timedelta(minutes=break_duration)
+                time_slots.append({"label": "BREAK", "time": f"{curr_time.strftime('%I:%M %p')}-{b_end.strftime('%I:%M %p')}", "is_break": True})
+                curr_time = b_end
 
-        # --- Generation & Clash Prevention ---
-        master_schedule = {} 
+        master_schedule = {} # To avoid clashes
 
-        for student_class in classes:
-            st.write(f"### 📋 Timetable for: {student_class}")
-            class_table = {}
-            
-            for day in days:
-                daily_slots = []
-                period_num = 0
-                
-                for slot in time_slots:
-                    if slot["is_break"]:
-                        daily_slots.append("☕ BREAK")
-                    else:
-                        # Teacher Clash Check
-                        available_teachers = [t for t in teachers if (day, slot["time"], t) not in master_schedule]
-                        
-                        if available_teachers:
-                            t_name = random.choice(available_teachers)
-                            s_name = random.choice(subjects)
-                            master_schedule[(day, slot["time"], t_name)] = student_class
-                            daily_slots.append(f"{t_name} \n ({s_name})")
+        for sec in sections:
+            st.markdown(f"## 🏁 {sec['name']} Section")
+            for cls in sec["classes"]:
+                st.write(f"### 📋 Timetable: {cls}")
+                class_table = {}
+                for day in days:
+                    daily_slots = []
+                    for slot in time_slots:
+                        if slot["is_break"]:
+                            daily_slots.append("☕ BREAK")
                         else:
-                            daily_slots.append("❌ NO TEACHER")
-                        period_num += 1
+                            # Use ONLY section-specific teachers
+                            available = [t for t in sec["teachers"] if (day, slot["time"], t) not in master_schedule]
+                            if available:
+                                teacher = random.choice(available)
+                                master_schedule[(day, slot["time"], teacher)] = cls
+                                daily_slots.append(f"{teacher}\n({random.choice(subjects)})")
+                            else:
+                                daily_slots.append("❌ NO TEACHER")
+                    class_table[day] = daily_slots
                 
-                class_table[day] = daily_slots
-            
-            # DataFrame display
-            row_labels = [f"{s['label']} \n ({s['time']})" for s in time_slots]
-            df = pd.DataFrame(class_table, index=row_labels)
-            st.table(df)
-            st.markdown("---")
+                df = pd.DataFrame(class_table, index=[f"{s['label']} ({s['time']})" for s in time_slots])
+                st.table(df)
+                csv = df.to_csv().encode('utf-8')
+                st.download_button(f"📥 Download {cls} PDF/Excel", csv, f"{cls}.csv", "text/csv")
 
 
 
