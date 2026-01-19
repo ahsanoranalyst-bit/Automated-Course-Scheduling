@@ -64,5 +64,6 @@ if st.button("Generate Optimized Timetable"):
     
     st.table(df)
 
-    st.info(f"License Status: Active | Expiry: {2026-12-31}")
+    st.info(f"License Status: Active | Expiry: {"2026-12-31"})
+
 
