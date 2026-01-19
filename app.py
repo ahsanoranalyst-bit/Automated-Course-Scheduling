@@ -59,15 +59,17 @@ if check_license():
     with st.sidebar:
         st.header("🏫 Setup")
         school_name = st.text_input("School Name:", "Global Excellence Academy")
-        days = st.multiselect("Days", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
-        start_t = st.time_input("Start", datetime.strptime("08:00", "%H:%M"))
-        end_t = st.time_input("End", datetime.strptime("14:00", "%H:%M"))
-        p_mins = st.number_input("Period Mins", 10, 120, 40)
+        days = st.multiselect("Working Days", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
+        start_t = st.time_input("Opens", datetime.strptime("08:00", "%H:%M"))
+        end_t = st.time_input("Closes", datetime.strptime("14:00", "%H:%M"))
+        p_mins = st.number_input("Period Duration", 10, 120, 40)
         brk_after = st.number_input("Break After", 1, 10, 4)
         brk_mins = st.number_input("Break Duration", 10, 60, 30)
 
     st.title(f"🏛️ {school_name}")
-    t1, t2, t3 = st.tabs(["Primary", "Secondary", "College"])
+    
+    # Registration Tabs
+    t1, t2, t3 = st.tabs(["Primary Section", "Secondary Section", "College Section"])
     with t1:
         c1, c2 = st.columns([1, 2]); p_c_df = c1.data_editor(pd.DataFrame([{"Class": "Grade 1", "Sections": 1}]), num_rows="dynamic", key="p_c")
         p_t_df = c2.data_editor(pd.DataFrame([{"Name": "", "Subject": ""}] * 5), num_rows="dynamic", key="p_t")
@@ -78,7 +80,7 @@ if check_license():
         c1, c2 = st.columns([1, 2]); c_c_df = c1.data_editor(pd.DataFrame([{"Class": "FSc-1", "Sections": 1}]), num_rows="dynamic", key="c_c")
         c_t_df = c2.data_editor(pd.DataFrame([{"Name": "", "Subject": ""}] * 5), num_rows="dynamic", key="c_t")
 
-    if st.button("🚀 GENERATE SYSTEM"):
+    if st.button("🚀 EXECUTE FULL ANALYSIS"):
         def process(c_df, t_df):
             cls = []
             for _, r in c_df.iterrows():
@@ -120,51 +122,58 @@ if check_license():
                     day_plans[d] = slot_list
                 class_schedules[cls] = pd.DataFrame(day_plans, index=[s['time'] for s in slots])
 
-        # --- SECTION 1: PERFORMANCE ---
+        # --- SECTION 1: ONE LINE PERFORMANCE ---
         st.markdown("---")
-        st.header("📈 School Performance")
+        st.header("📈 Overall School Performance")
         m1, m2, m3 = st.columns(3)
         all_f = sum(x["F"] for x in stats.values()); all_t = sum(x["T"] for x in stats.values()); eff = (all_f / all_t * 100) if all_t > 0 else 0
-        m1.metric("Overall Efficiency", f"{eff:.1f}%"); m2.metric("Active Rooms", len(class_schedules)); m3.metric("Profit Status", "Optimized" if eff > 85 else "Review Staff")
-        
-        sc1, sc2, sc3 = st.columns(3)
-        for i, name in enumerate(["Primary", "Secondary", "College"]):
-            e = (stats[name]["F"]/stats[name]["T"]*100) if stats[name]["T"] > 0 else 0
-            st.columns(3)[i].info(f"**{name}**\n\nEff: {e:.1f}% | Vacancies: {stats[name]['T']-stats[name]['F']}")
+        m1.metric("Overall Efficiency", f"{eff:.1f}%"); m2.metric("Total Rooms", len(class_schedules)); m3.metric("Profitability", "High" if eff > 85 else "Review")
 
-        # --- SECTION 2: OFFICIAL CHARTS (Class & Teacher) ---
+        # Fixed Row for Sections
+        st.write("#### ⚡ Section Wise Stats")
+        sc1, sc2, sc3 = st.columns(3)
+        with sc1:
+            pe = (stats["Primary"]["F"]/stats["Primary"]["T"]*100) if stats["Primary"]["T"] > 0 else 0
+            st.info(f"**PRIMARY**\n\nEff: {pe:.1f}%\nVacancies: {stats['Primary']['T']-stats['Primary']['F']}")
+        with sc2:
+            se = (stats["Secondary"]["F"]/stats["Secondary"]["T"]*100) if stats["Secondary"]["T"] > 0 else 0
+            st.info(f"**SECONDARY**\n\nEff: {se:.1f}%\nVacancies: {stats['Secondary']['T']-stats['Secondary']['F']}")
+        with sc3:
+            ce = (stats["College"]["F"]/stats["College"]["T"]*100) if stats["College"]["T"] > 0 else 0
+            st.info(f"**COLLEGE**\n\nEff: {ce:.1f}%\nVacancies: {stats['College']['T']-stats['College']['F']}")
+
+        # --- SECTION 2: OFFICIAL TIMETABLES ---
         st.markdown("---")
-        st.header("📋 Official Timetable Charts")
-        col_c, col_t = st.columns(2)
-        with col_c:
-            st.subheader("Classroom Copies")
-            for cls, df in class_schedules.items():
-                p = create_pdf(school_name, "CLASS TIMETABLE", cls, df)
-                st.download_button(f"📥 {cls} PDF", p, f"{cls}.pdf", key=f"cl_{cls}")
-        with col_t:
-            st.subheader("Teacher Personal Copies")
-            all_staff = p_tea + s_tea + c_tea
-            for t in all_staff:
-                t_duty = {d: [master.get((d, s["time"], t), "FREE") if not s["brk"] else "BRK" for s in slots] for d in days}
-                tp = create_pdf(school_name, "TEACHER DUTY", t, pd.DataFrame(t_duty, index=[s['time'] for s in slots]))
-                st.download_button(f"📥 {t} PDF", tp, f"{t}.pdf", key=f"tea_{t}")
+        st.header("📋 Student & Teacher Official Charts")
+        for cls, df in class_schedules.items():
+            with st.expander(f"Class: {cls}"):
+                st.table(df)
+                p = create_pdf(school_name, "CLASS TIMETABLE", f"Room: {cls}", df)
+                st.download_button(f"Print {cls} PDF", p, f"{cls}.pdf", key=f"b_{cls}")
+
+        st.markdown("---")
+        all_staff = p_tea + s_tea + c_tea
+        for t in all_staff:
+            t_duty = {d: [master.get((d, s["time"], t), "FREE") if not s["brk"] else "BREAK" for s in slots] for d in days}
+            df_t = pd.DataFrame(t_duty, index=[s['time'] for s in slots])
+            with st.expander(f"Teacher: {t}"):
+                st.table(df_t)
+                tp = create_pdf(school_name, "TEACHER DUTY", f"Staff: {t}", df_t)
+                st.download_button(f"Print {t} PDF", tp, f"{t}.pdf", key=f"tea_{t}")
 
         # --- SECTION 3: STAFF ROOM MASTER WEEKLY SUMMARY ---
         st.markdown("---")
-        st.header("🏢 STAFF ROOM MASTER WEEKLY SUMMARY")
-        st.info("This table shows the total workload of each teacher for the entire week on a single page.")
-        
+        st.header("🏢 STAFF ROOM MASTER SUMMARY SHEET")
         weekly_summary = []
         for t in all_staff:
             row = {"Teacher": t}
             for d in days:
-                busy_slots = [s["time"] for s in slots if not s["brk"] and (d, s["time"], t) in master]
-                row[d] = f"{len(busy_slots)} Periods" if busy_slots else "FREE"
+                busy = [s["time"] for s in slots if not s["brk"] and (d, s["time"], t) in master]
+                row[d] = f"{len(busy)} Periods" if busy else "FREE"
             weekly_summary.append(row)
         
         df_summary = pd.DataFrame(weekly_summary).set_index("Teacher")
-        st.table(df_summary) # Displaying for staff room view
-        
-        summary_pdf = create_pdf(school_name, "WEEKLY STAFF SUMMARY", "Total Workload Distribution", df_summary)
+        st.table(df_summary)
+        summary_pdf = create_pdf(school_name, "WEEKLY MASTER SUMMARY", "Workload Distribution", df_summary)
         if summary_pdf:
-            st.download_button("📥 DOWNLOAD MASTER SUMMARY PDF", summary_pdf, "Weekly_Summary.pdf", "application/pdf")
+            st.download_button("📥 DOWNLOAD MASTER SUMMARY PDF", summary_pdf, "Weekly_Summary.pdf")
