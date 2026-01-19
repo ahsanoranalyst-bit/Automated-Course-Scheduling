@@ -36,7 +36,7 @@ if not st.session_state['authenticated']:
     st.stop()
 
 # --- Main App Interface ---
-st.markdown("<div class='header-box'><h1>📅 Smart Education Timetable Scheduler</h1><p>AI-Powered Optimization</p></div>", unsafe_allow_html=True)
+st.markdown("<div class='header-box'><h1>📅 Smart Education Timetable Scheduler</h1><p> Optimization</p></div>", unsafe_allow_html=True)
 
 with st.sidebar:
     st.header("⚙️ Configuration")
@@ -65,6 +65,7 @@ if st.button("Generate Optimized Timetable"):
     st.table(df)
 
     st.info(f"License Status: Active | Expiry: 2026-12-31")
+
 
 
 
