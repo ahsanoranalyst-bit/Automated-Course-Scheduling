@@ -1,13 +1,23 @@
-import requests
-SHEET_URL = "https://script.google.com/macros/s/AKfycbxq15xberXYSLGYf4c6A2QNWjCjSaR9UbHgknNw36Bo9A0bRFcCOtnFHoea5Sd05BE/exec" 
 import streamlit as st
 import pandas as pd
 import random
 from datetime import datetime, timedelta
 from fpdf import FPDF
+import requests  # Added for Google Sheets connection
 
 # 1. Page Configuration
 st.set_page_config(page_title="School ERP Pro", layout="wide")
+
+# URL for Google Sheets Web App
+GSHEET_URL = "https://script.google.com/macros/s/AKfycbxiFyOz-wHJKkc08LYX4BqMXXa2QY_uI5K2m5QOxIZtyrStRfACXejphbasUYsCcZ0/exec"
+
+# Function to send data to Google Sheets
+def send_to_google_sheets(data):
+    try:
+        response = requests.post(GSHEET_URL, json=data)
+        return response.status_code == 200
+    except:
+        return False
 
 # 2. Security (Profit Level 200)
 MASTER_KEY = "AhsanPro200"
@@ -68,21 +78,33 @@ if check_license():
         p_mins = st.number_input("Period Duration", 10, 120, 40)
         brk_after = st.number_input("Break After Period", 1, 10, 4)
         brk_mins = st.number_input("Break Mins", 10, 60, 30)
-       
+        
         # --- SIDEBAR BUTTONS ---
         st.divider()
         if st.button("Save Configuration", use_container_width=True, type="primary"):
-            st.sidebar.success("Settings Saved!")
-           
+            # Prepare data payload for Google Sheets
+            payload = {
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "school_name": custom_school_name,
+                "days": ", ".join(days),
+                "timing": f"{start_t} to {end_t}",
+                "period_duration": p_mins
+            }
+            # Execute connection
+            if send_to_google_sheets(payload):
+                st.sidebar.success("Settings Saved & Synced to Cloud!")
+            else:
+                st.sidebar.warning("Settings Saved Locally (Sync Failed)")
+            
         if st.button("Logout", use_container_width=True):
             st.session_state['authenticated'] = False
             st.rerun()
 
     st.title(f" {custom_school_name}")
-   
+    
     # Registration Tabs
     tab1, tab2, tab3 = st.tabs(["Primary Registration", "Secondary Registration", "College Registration"])
-   
+    
     with tab1:
         col1, col2 = st.columns([1, 2])
         p_c_df = col1.data_editor(pd.DataFrame([{"Class": "Grade 1", "Sections": 1}]), num_rows="dynamic", key="p_c")
@@ -148,7 +170,7 @@ if check_license():
         # --- DISPLAY 1: ANALYTICS (TOP) ---
         st.markdown("---")
         st.header(f" {custom_school_name}: Profit & Efficiency Analysis")
-       
+        
         # Total Stats
         m1, m2, m3 = st.columns(3)
         all_f = sum(x["F"] for x in stats.values()); all_t = sum(x["T"] for x in stats.values())
@@ -164,11 +186,11 @@ if check_license():
         with s_col1:
             p_e = (stats["Primary"]["F"]/stats["Primary"]["T"]*100) if stats["Primary"]["T"] > 0 else 0
             st.info(f"**PRIMARY**\n\nEfficiency: {p_e:.1f}%\nVacancies: {stats['Primary']['T']-stats['Primary']['F']}")
-       
+        
         with s_col2:
             s_e = (stats["Secondary"]["F"]/stats["Secondary"]["T"]*100) if stats["Secondary"]["T"] > 0 else 0
             st.info(f"**SECONDARY**\n\nEfficiency: {s_e:.1f}%\nVacancies: {stats['Secondary']['T']-stats['Secondary']['F']}")
-           
+            
         with s_col3:
             c_e = (stats["College"]["F"]/stats["College"]["T"]*100) if stats["College"]["T"] > 0 else 0
             st.info(f"**COLLEGE**\n\nEfficiency: {c_e:.1f}%\nVacancies: {stats['College']['T']-stats['College']['F']}")
@@ -192,7 +214,3 @@ if check_license():
                 st.table(df_t)
                 tp = create_pdf(custom_school_name, "TEACHER DUTY CHART", f"Teacher: {t}", df_t)
                 st.download_button(f" Print {t} PDF", tp, f"{t}.pdf", "application/pdf", key=f"tb_{t}")
-
-
-
-
