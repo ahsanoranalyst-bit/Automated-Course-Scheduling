@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "automated-course-schedul-86c46",
+  "private_key_id": "bf1e7c96623784aa6b258f87be9c5b21e76056c7",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDsXO4bIzvMzttE\nWE2Al0skjrf8fZQwXvq5rLLnjuZuhZMpGfbEeMhBL6Cgt8x5rDQuFrhYbrl7EO1L\nRLSKBw4ngUH9QfO24thpi8CzQxEt6TjFE+TC5XpStA4uD4expGVG3uAUeJaQgccU\npF51bP+xoBJr/4hILHHdNuooE4YSFetdZksXbRJXnL55Z14M3v2KuavfQpgsBd0u\nRM1JjrjGQWl98cq2M+myjIJaEh8tHBZJsQtkSmitwOerIwfqJzOGX3NRSVuyHqAb\nDIQitvBSE5vcHJZ9qvyXx3ecPWB6NrrDdUsiC15wkVFC72MBWyEcP3qEpERozzF/\nD8Zz6sTfAgMBAAECggEACFpQX80i893ricLFGmI+WZBhmB6n+f2hRqZ/vAckxYsa\n5Dzyp4bNLOCOAJ/+Ld6UCXzsDtP64gp7GEnZR3dwXJ0Iw/Zssm3Z0AEMUklwdfrj\n8rL9RpXteLa8OYx68yAoJBUEPjT0vS6Y5nXYkLXFY3WQsRharJJFg9fI9pmaB1GF\nlhV2M66nWR/sJe47+aGRBneZHbuwWBE9Ph159AYQHX+2jU7434CIJsl4Q8EfK6nq\n7OB8ag0POtOovsSdAc9tWSxQSs884lzGvXutKdLItu5yo7GMdzDKZF+uIWhazUlE\nnnYCIrdZ7lsBjLGeDn7mRFUM3+sXhI5H686Udi2QwQKBgQD/CkVkh+7pjbvbJa0F\nrUgtES6wxgZt22Vr+Wg4xEO/ZSNvJ3h+03QyTnEhuWboi4Lf3yFAIJBaHBDvVff7\njtK45JTtTWtCrEqQQR59Alj2ZmuQkLvl3MZRCUOFNcmtn/4xLShrMFDeV1fctuTJ\nB4nUQ8eCZcanY5XE67If/IUAmQKBgQDtQKnu1bLhoNcFKsmcCTN7I0Gho4lPe1bm\n4zUAPMekiV73km/FM4Fppj+85l+53Eh05Dc5E9AFvSPbxHAMFsADL/oc4d/mcRXR\ns6N0nJ1dNniPs0KbUu/9qpVbEUk62cVeurUnfbkaN6DtSO2O6OkXbm4b07SOd/t4\nuY5BkwdENwKBgHVAkZqgbBRwFvevoJZFjjM5/Q9EW1xSS5SSe3ntsX/izaGiseEM\n8hTWv2hTxp4O1cJ64NyMnBDxak++ZF4A0ZwzasyWlUN31mfvqEast53AhJ9YCyqo\nj3xeF+68RdZPAhw1uKle8y7lVP2iEBjkIFe4OZcXl3cJb6ey/Jd8DuGxAoGAXZv/\n8I48sC2H6TACsCApQdKdWKtvx/6AQUUwalGQ6+iPodsTYpl53DeOOngjGPBDXmuV\nJl4c28bO2S1ekEaBqEBLzQ2KDCBeXYklWyNYK6kMVJaEF0jYDBw8JdxiKmg2KbQ9\nOcGvQRrl0fnOUW6wWWBm7W/Qc83/WJjN+i2K1m0CgYAtS8GuwysoJ1Grj6r6ReHm\nm6a/pjJa0POI5gsEqNVVlj9ZCOqNd+gsHMxQZG78ekQnt0BgYrvvgCSUeDBOsPbr\nK8TL3YtFCfGUd1b5YTKduNjGw5iWIofN02tcEkMHn451KA/Lb8/3oGFPo//tM2SU\nY8EC98N/Ml62S3Ve87u4iA==\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-fbsvc@automated-course-schedul-86c46.iam.gserviceaccount.com",
+  "client_id": "115761823531030639264",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40automated-course-schedul-86c46.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
