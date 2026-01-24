@@ -5,10 +5,10 @@ from datetime import datetime, timedelta
 from fpdf import FPDF
 
 # 1. Page Configuration
-st.set_page_config(page_title="School ERP Pro", layout="wide")
+st.set_page_config(page_title="Automated Course Scheduling Optimizer", layout="wide")
 
 # 2. Security (Profit Level 200)
-MASTER_KEY = "AhsanPro200"
+MASTER_KEY = "Ahsan123"
 EXPIRY_DATE = "2026-12-31"
 
 def check_license():
@@ -190,3 +190,4 @@ if check_license():
                 st.table(df_t)
                 tp = create_pdf(custom_school_name, "TEACHER DUTY CHART", f"Teacher: {t}", df_t)
                 st.download_button(f" Print {t} PDF", tp, f"{t}.pdf", "application/pdf", key=f"tb_{t}")
+
