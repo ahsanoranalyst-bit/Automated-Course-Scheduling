@@ -1,32 +1,4 @@
 import streamlit as st
-import firebase_admin
-from firebase_admin import credentials, firestore
-
-# 1. Page Title
-st.title("Enterprise Profit Manager")
-
-# 2. Firebase Connection (Using your uploaded key.json)
-if not firebase_admin._apps:
-    cred = credentials.Certificate("key.json")
-    firebase_admin.initialize_app(cred)
-
-db = firestore.client()
-
-# 3. Profit Slider (Range 1 to 200) [cite: 2025-12-29]
-profit_level = st.slider("Select Profit Level", 1, 200, 100)
-
-# 4. Simple Save Button (No Date/Timestamp)
-if st.button("Save Profit"):
-    try:
-        # Saving ONLY the profit level
-        db.collection("profit_data").add({
-            "level": profit_level
-        })
-        st.success(f"Profit Level {profit_level} has been saved!") [cite: 2025-12-29]
-    except Exception as e:
-        st.error(f"Error: {e}")
-
-import streamlit as st
 import pandas as pd
 import random
 from datetime import datetime, timedelta
@@ -95,8 +67,11 @@ if check_license():
         brk_after = st.number_input("Break After Period", 1, 10, 4)
         brk_mins = st.number_input("Break Mins", 10, 60, 30)
         
-        # --- NEW LOGOUT BUTTON SECTION ---
+        # --- SIDEBAR BUTTONS ---
         st.divider()
+        if st.button("Save Configuration", use_container_width=True, type="primary"):
+            st.sidebar.success("Settings Saved!")
+            
         if st.button("Logout", use_container_width=True):
             st.session_state['authenticated'] = False
             st.rerun()
@@ -215,4 +190,3 @@ if check_license():
                 st.table(df_t)
                 tp = create_pdf(custom_school_name, "TEACHER DUTY CHART", f"Teacher: {t}", df_t)
                 st.download_button(f" Print {t} PDF", tp, f"{t}.pdf", "application/pdf", key=f"tb_{t}")
-
