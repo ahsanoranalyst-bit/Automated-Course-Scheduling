@@ -1,32 +1,4 @@
 import streamlit as st
-import firebase_admin
-from firebase_admin import credentials, firestore
-
-# 1. Page Title
-st.title("Enterprise Profit Manager")
-
-# 2. Firebase Connection (Using your uploaded key.json)
-if not firebase_admin._apps:
-    cred = credentials.Certificate("key.json")
-    firebase_admin.initialize_app(cred)
-
-db = firestore.client()
-
-# 3. Profit Slider (Range 1 to 200) [cite: 2025-12-29]
-profit_level = st.slider("Select Profit Level", 1, 200, 100)
-
-# 4. Simple Save Button (No Date/Timestamp)
-if st.button("Save Profit"):
-    try:
-        # Saving ONLY the profit level
-        db.collection("profit_data").add({
-            "level": profit_level
-        })
-        st.success(f"Profit Level {profit_level} has been saved!") [cite: 2025-12-29]
-    except Exception as e:
-        st.error(f"Error: {e}")
-
-import streamlit as st
 import pandas as pd
 import random
 from datetime import datetime, timedelta
@@ -42,10 +14,10 @@ EXPIRY_DATE = "2026-12-31"
 def check_license():
     if 'authenticated' not in st.session_state: st.session_state['authenticated'] = False
     if datetime.now().date() > datetime.strptime(EXPIRY_DATE, "%Y-%m-%d").date():
-        st.error("❌ LICENSE EXPIRED!")
+        st.error(" LICENSE EXPIRED!")
         return False
     if not st.session_state['authenticated']:
-        st.title("🔐 Enterprise Software Activation")
+        st.title(" Enterprise Software Activation")
         user_key = st.text_input("Enter Activation Key:", type="password")
         if st.button("Activate"):
             if user_key == MASTER_KEY:
@@ -85,7 +57,7 @@ def create_pdf(school_name, header, sub, df):
 # 4. Main ERP Logic
 if check_license():
     with st.sidebar:
-        st.header("🏫 School Setup")
+        st.header(" School Setup")
         custom_school_name = st.text_input("Enter School Name:", "Global Excellence Academy")
         st.divider()
         days = st.multiselect("Days", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
@@ -94,12 +66,18 @@ if check_license():
         p_mins = st.number_input("Period Duration", 10, 120, 40)
         brk_after = st.number_input("Break After Period", 1, 10, 4)
         brk_mins = st.number_input("Break Mins", 10, 60, 30)
+        
+        # --- NEW LOGOUT BUTTON SECTION ---
+        st.divider()
+        if st.button("Logout", use_container_width=True):
+            st.session_state['authenticated'] = False
+            st.rerun()
 
-    st.title(f"🏛️ {custom_school_name}")
-   
+    st.title(f" {custom_school_name}")
+    
     # Registration Tabs
     tab1, tab2, tab3 = st.tabs(["Primary Registration", "Secondary Registration", "College Registration"])
-   
+    
     with tab1:
         col1, col2 = st.columns([1, 2])
         p_c_df = col1.data_editor(pd.DataFrame([{"Class": "Grade 1", "Sections": 1}]), num_rows="dynamic", key="p_c")
@@ -113,7 +91,7 @@ if check_license():
         c_c_df = col1.data_editor(pd.DataFrame([{"Class": "FSc-1", "Sections": 1}]), num_rows="dynamic", key="c_c")
         c_t_df = col2.data_editor(pd.DataFrame([{"Name": "", "Subject": ""}] * 5), num_rows="dynamic", key="c_t")
 
-    if st.button("🚀 Run Analysis"):
+    if st.button(" Run Analysis"):
         # Processing Data
         def process_list(c_df, t_df):
             cls = []
@@ -151,21 +129,21 @@ if check_license():
                 for d in days:
                     slot_list = []
                     for s in slots:
-                        if s["brk"]: slot_list.append("☕ BREAK")
+                        if s["brk"]: slot_list.append(" BREAK")
                         else:
                             stats[sec["id"]]["T"] += 1
                             avail = [t for t in sec["t"] if (d, s["time"], t) not in master and (d, cls, t) not in master]
                             if avail:
                                 pk = random.choice(avail); master[(d, s["time"], pk)] = cls
                                 master[(d, cls, pk)] = True; slot_list.append(pk); stats[sec["id"]]["F"] += 1
-                            else: slot_list.append("❌ NO STAFF")
+                            else: slot_list.append(" NO STAFF")
                     day_plans[d] = slot_list
                 class_schedules[cls] = pd.DataFrame(day_plans, index=[s['time'] for s in slots])
 
         # --- DISPLAY 1: ANALYTICS (TOP) ---
         st.markdown("---")
-        st.header(f"📊 {custom_school_name}: Profit & Efficiency Analysis")
-       
+        st.header(f" {custom_school_name}: Profit & Efficiency Analysis")
+        
         # Total Stats
         m1, m2, m3 = st.columns(3)
         all_f = sum(x["F"] for x in stats.values()); all_t = sum(x["T"] for x in stats.values())
@@ -175,42 +153,37 @@ if check_license():
         m3.metric("Profit Status", "Optimized" if eff > 85 else "Action Required")
 
         # --- FIXED SECTION PERFORMANCE IN ONE LINE ---
-        st.write("#### ⚡ Section-Wise Performance (Primary | Secondary | College)")
-        s_col1, s_col2, s_col3 = st.columns(3) # Creating 3 equal columns for one line display
+        st.write("####  Section-Wise Performance (Primary | Secondary | College)")
+        s_col1, s_col2, s_col3 = st.columns(3)
 
         with s_col1:
             p_e = (stats["Primary"]["F"]/stats["Primary"]["T"]*100) if stats["Primary"]["T"] > 0 else 0
             st.info(f"**PRIMARY**\n\nEfficiency: {p_e:.1f}%\nVacancies: {stats['Primary']['T']-stats['Primary']['F']}")
-       
+        
         with s_col2:
             s_e = (stats["Secondary"]["F"]/stats["Secondary"]["T"]*100) if stats["Secondary"]["T"] > 0 else 0
             st.info(f"**SECONDARY**\n\nEfficiency: {s_e:.1f}%\nVacancies: {stats['Secondary']['T']-stats['Secondary']['F']}")
-           
+            
         with s_col3:
             c_e = (stats["College"]["F"]/stats["College"]["T"]*100) if stats["College"]["T"] > 0 else 0
             st.info(f"**COLLEGE**\n\nEfficiency: {c_e:.1f}%\nVacancies: {stats['College']['T']-stats['College']['F']}")
 
         # --- DISPLAY 2: CLASS SCHEDULES ---
         st.markdown("---")
-        st.header("📋 Student Class Schedules")
+        st.header(" Student Class Schedules")
         for cls_name, df in class_schedules.items():
             with st.expander(f"View: {cls_name}"):
                 st.table(df)
                 p = create_pdf(custom_school_name, "STUDENT TIMETABLE", f"Class: {cls_name}", df)
-                st.download_button(f"📥 Print {cls_name} PDF", p, f"{cls_name}.pdf", "application/pdf", key=f"b_{cls_name}")
+                st.download_button(f" Print {cls_name} PDF", p, f"{cls_name}.pdf", "application/pdf", key=f"b_{cls_name}")
 
         # --- DISPLAY 3: TEACHER DUTIES ---
         st.markdown("---")
-        st.header("👨‍🏫 Teacher Duty Charts")
+        st.header(" Teacher Duty Charts")
         for t in (p_tea + s_tea + c_tea):
             t_duty = {d: [master.get((d, s["time"], t), "FREE") if not s["brk"] else "BREAK" for s in slots] for d in days}
             df_t = pd.DataFrame(t_duty, index=[s['time'] for s in slots])
             with st.expander(f"View: {t}"):
                 st.table(df_t)
                 tp = create_pdf(custom_school_name, "TEACHER DUTY CHART", f"Teacher: {t}", df_t)
-                st.download_button(f"📥 Print {t} PDF", tp, f"{t}.pdf", "application/pdf", key=f"tb_{t}")
-
-
-
-
-
+                st.download_button(f" Print {t} PDF", tp, f"{t}.pdf", "application/pdf", key=f"tb_{t}")
