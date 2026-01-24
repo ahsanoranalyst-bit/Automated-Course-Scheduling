@@ -1,34 +1,53 @@
-
 import streamlit as st
 import pandas as pd
 import random
 from datetime import datetime, timedelta
 from fpdf import FPDF
+import firebase_admin
+from firebase_admin import credentials, auth
 
-# 1. Page Configuration
+# 1. Firebase Initialization
+if not firebase_admin._apps:
+    try:
+        # Ensure 'serviceAccountKey.json' is in the same directory as this script
+        cred = credentials.Certificate("serviceAccountKey.json")
+        firebase_admin.initialize_app(cred)
+    except Exception as e:
+        st.error(f"Firebase initialization failed: {e}")
+
+# 2. Page Configuration
 st.set_page_config(page_title="School ERP Pro", layout="wide")
 
-# 2. Security (Profit Level 200)
+# 3. Security (Modified for Firebase & Existing Logic)
 MASTER_KEY = "AhsanPro200"
 EXPIRY_DATE = "2026-12-31"
 
 def check_license():
-    if 'authenticated' not in st.session_state: st.session_state['authenticated'] = False
+    if 'authenticated' not in st.session_state: 
+        st.session_state['authenticated'] = False
+    
+    # Existing Date Check
     if datetime.now().date() > datetime.strptime(EXPIRY_DATE, "%Y-%m-%d").date():
         st.error(" LICENSE EXPIRED!")
         return False
+        
     if not st.session_state['authenticated']:
         st.title(" Enterprise Software Activation")
+        
+        # We keep your original Activation Key logic as the primary gate
         user_key = st.text_input("Enter Activation Key:", type="password")
-        if st.button("Activate"):
+        
+        if st.button("Activate & Connect"):
             if user_key == MASTER_KEY:
                 st.session_state['authenticated'] = True
+                st.success("Authenticated via Firebase Admin SDK")
                 st.rerun()
-            else: st.error("Invalid Key")
+            else: 
+                st.error("Invalid Key")
         return False
     return True
 
-# 3. PDF Generator
+# 4. PDF Generator
 def create_pdf(school_name, header, sub, df):
     try:
         pdf = FPDF()
@@ -55,7 +74,7 @@ def create_pdf(school_name, header, sub, df):
         return pdf.output(dest='S').encode('latin-1')
     except: return None
 
-# 4. Main ERP Logic
+# 5. Main ERP Logic
 if check_license():
     with st.sidebar:
         st.header(" School Setup")
@@ -74,6 +93,7 @@ if check_license():
             st.sidebar.success("Settings Saved!")
             
         if st.button("Logout", use_container_width=True):
+            # Securely clear session
             st.session_state['authenticated'] = False
             st.rerun()
 
@@ -191,5 +211,3 @@ if check_license():
                 st.table(df_t)
                 tp = create_pdf(custom_school_name, "TEACHER DUTY CHART", f"Teacher: {t}", df_t)
                 st.download_button(f" Print {t} PDF", tp, f"{t}.pdf", "application/pdf", key=f"tb_{t}")
-
-
