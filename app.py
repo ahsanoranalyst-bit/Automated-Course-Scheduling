@@ -3,21 +3,10 @@ import pandas as pd
 import random
 from datetime import datetime, timedelta
 from fpdf import FPDF
-import requests  # Added for cloud connection
+import requests  # Added for Google Sheets connection
 
 # 1. Page Configuration
 st.set_page_config(page_title="School ERP Pro", layout="wide")
-
-# Google Sheets Web App URL
-GSHEET_URL = "https://script.google.com/macros/s/AKfycbxyMPXGlmXVe07M-mSFAl0wzHv3ObF9btFKWPLY8Hu3AUe7mnqkY81ugLPmf87NkB0n/exec"
-
-# Added function to send data to Google Sheets
-def send_data_to_gsheet(payload):
-    try:
-        response = requests.post(GSHEET_URL, json=payload, timeout=10)
-        return response.status_code == 200
-    except:
-        return False
 
 # 2. Security (Profit Level 200)
 MASTER_KEY = "AhsanPro200"
@@ -82,20 +71,22 @@ if check_license():
         # --- SIDEBAR BUTTONS ---
         st.divider()
         if st.button("Save Configuration", use_container_width=True, type="primary"):
-            # Prepare data for Google Sheets
-            data_to_save = {
-                "school_name": custom_school_name,
-                "working_days": str(days),
-                "open_time": str(start_t),
-                "close_time": str(end_t),
-                "period_duration": p_mins,
+            # Prepare parameters to send to Google Sheet
+            params = {
+                "school": custom_school_name,
+                "days": ",".join(days),
+                "open": start_t.strftime("%H:%M"),
+                "close": end_t.strftime("%H:%M"),
+                "duration": p_mins,
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             }
-            # Trigger request
-            if send_data_to_gsheet(data_to_save):
-                st.sidebar.success("Settings Saved & Synced to Sheet!")
-            else:
-                st.sidebar.warning("Saved Locally, but Sync Failed.")
+            url = "https://script.google.com/macros/s/AKfycbxptbYdW5fgflcSBbh1YDwLW8jRrQaQGaCTWOHE0VIwiD6T5SdEfIzLRva32H820ic5/exec"
+            
+            try:
+                requests.post(url, params=params)
+                st.sidebar.success("Settings Saved & Synced!")
+            except:
+                st.sidebar.error("Saved locally, but Sync failed.")
             
         if st.button("Logout", use_container_width=True):
             st.session_state['authenticated'] = False
