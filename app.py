@@ -1,5 +1,32 @@
 import streamlit as st
 import pandas as pd
+from streamlit_gsheets import GSheetsConnection
+
+# 1. Establish connection using the URL you saved in Secrets
+conn = st.connection("gsheets", type=GSheetsConnection)
+
+# 2. LOAD DATA: This brings back your work from Google Sheets when you open the app
+if 'data' not in st.session_state:
+    try:
+        # It automatically reads your existing columns and data
+        st.session_state.data = conn.read(spreadsheet=st.secrets["gsheet_url"])
+    except:
+        # If the sheet is empty, it starts with an empty table
+        st.session_state.data = pd.DataFrame()
+
+# 3. SAVE DATA: Add this under your "Save" button
+if st.button("Save to Google Sheet"):
+    if not st.session_state.data.empty:
+        conn.update(spreadsheet=st.secrets["gsheet_url"], data=st.session_state.data)
+        st.success("All your columns and data (including Profit Level 1-200) are saved!")
+    else:
+        st.warning("No data to save yet.")
+
+# Displaying your data on the screen
+st.write(st.session_state.data)
+
+import streamlit as st
+import pandas as pd
 import random
 from datetime import datetime, timedelta
 from fpdf import FPDF
@@ -208,3 +235,4 @@ if check_license():
                 st.table(df_t)
                 tp = create_pdf(custom_school_name, "TEACHER DUTY CHART", f"Teacher: {t}", df_t)
                 st.download_button(f" Print {t} PDF", tp, f"{t}.pdf", "application/pdf", key=f"tb_{t}")
+
