@@ -1,4 +1,26 @@
+import streamlit as st
+from google.cloud import firestore
+from google.oauth2 import service_account
 
+try:
+    if "firestore" in st.secrets:
+        creds_info = st.secrets["firestore"]
+        credentials = service_account.Credentials.from_service_account_info(creds_info)
+        db = firestore.Client(credentials=credentials)
+        
+        def save_school_schedule(schedule_id, profit_val):
+            if schedule_id:
+                doc_ref = db.collection("Automatic-School-Scheduling").document(str(schedule_id))
+                doc_ref.set({
+                    "project_name": "Automatic School Scheduling",
+                    "schedule_name": schedule_id,
+                    "profit_level": profit_val,
+                    "created_at": firestore.SERVER_TIMESTAMP
+                })
+                return True
+            return False
+except Exception as e:
+    st.error(f"Firestore Connection Error: {e}")
 import streamlit as st
 import pandas as pd
 import random
@@ -182,3 +204,4 @@ if check_license():
                 st.table(df_t)
                 tp = create_pdf(custom_school_name, "TEACHER DUTY CHART", f"Teacher: {t}", df_t)
                 st.download_button(f"📥 Print {t} PDF", tp, f"{t}.pdf", "application/pdf", key=f"tb_{t}")
+
