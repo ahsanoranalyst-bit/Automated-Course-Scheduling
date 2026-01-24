@@ -1,4 +1,60 @@
 import streamlit as st
+import firebase_admin
+from firebase_admin import credentials, firestore
+
+# --- Firebase Initialization ---
+# Check if Firebase has already been initialized to avoid re-initialization errors
+if not firebase_admin._apps:
+    try:
+        # Load credentials from st.secrets
+        cred = credentials.Certificate(st.secrets["firebase"])
+        firebase_admin.initialize_app(cred)
+        db = firestore.client()
+        st.success("Firebase initialized successfully!")
+    except Exception as e:
+        st.error(f"Error initializing Firebase: {e}")
+        st.stop() # Stop the app if Firebase cannot be initialized
+else:
+    db = firestore.client()
+    st.info("Firebase already initialized.")
+
+# --- Streamlit App Layout ---
+st.title("Profit Level Tracker")
+
+st.write("Use the slider to select a profit level and save it to Firestore.")
+
+# Slider for profit level (range 1-200)
+profit_level = st.slider("Select Profit Level", 1, 200, 100)
+
+# Button to save the profit level
+if st.button("Save Profit Record"):
+    try:
+        # Reference the 'profit_records' collection
+        doc_ref = db.collection("profit_records").document()
+        doc_ref.set({
+            "profit": profit_level,
+            "timestamp": firestore.SERVER_TIMESTAMP # Records server timestamp
+        })
+        st.success(f"Profit level '{profit_level}' saved to Firestore in 'profit_records'!")
+    except Exception as e:
+        st.error(f"Error saving profit record to Firestore: {e}")
+
+st.markdown("---")
+st.subheader("Last 5 Profit Records")
+
+# Display recent profit records (optional)
+try:
+    # Fetch the last 5 records, ordered by timestamp
+    records = db.collection("profit_records").order_by("timestamp", direction=firestore.Query.DESCENDING).limit(5).get()
+    if records:
+        for i, record in enumerate(records):
+            st.write(f"{i+1}. Profit: {record.get('profit')}, Timestamp: {record.get('timestamp')}")
+    else:
+        st.write("No profit records found yet.")
+except Exception as e:
+    st.error(f"Error fetching profit records: {e}")
+
+import streamlit as st
 import pandas as pd
 import random
 from datetime import datetime, timedelta
@@ -181,3 +237,4 @@ if check_license():
                 st.table(df_t)
                 tp = create_pdf(custom_school_name, "TEACHER DUTY CHART", f"Teacher: {t}", df_t)
                 st.download_button(f"📥 Print {t} PDF", tp, f"{t}.pdf", "application/pdf", key=f"tb_{t}")
+
