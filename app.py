@@ -1,3 +1,5 @@
+import requests
+SHEET_URL = "https://script.google.com/macros/s/AKfycbxmrTv-pdVsxKkkSJgbogVGLwsCdeXut2bENyRYiQ2YaoGNOZpjr9QYzu6uGtTdrrA/exec" 
 import streamlit as st
 import pandas as pd
 import random
@@ -190,4 +192,5 @@ if check_license():
                 st.table(df_t)
                 tp = create_pdf(custom_school_name, "TEACHER DUTY CHART", f"Teacher: {t}", df_t)
                 st.download_button(f" Print {t} PDF", tp, f"{t}.pdf", "application/pdf", key=f"tb_{t}")
+
 
