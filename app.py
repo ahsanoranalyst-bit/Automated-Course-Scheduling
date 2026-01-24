@@ -3,7 +3,7 @@ import pandas as pd
 import random
 from datetime import datetime, timedelta
 from fpdf import FPDF
-import requests  # Added for Google Sheets connection
+import requests  # Added for Google Sheet connection
 
 # 1. Page Configuration
 st.set_page_config(page_title="School ERP Pro", layout="wide")
@@ -71,22 +71,24 @@ if check_license():
         # --- SIDEBAR BUTTONS ---
         st.divider()
         if st.button("Save Configuration", use_container_width=True, type="primary"):
-            # Prepare parameters to send to Google Sheet
-            params = {
-                "school": custom_school_name,
-                "days": ",".join(days),
-                "open": start_t.strftime("%H:%M"),
-                "close": end_t.strftime("%H:%M"),
-                "duration": p_mins,
-                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            # --- START DATA SENDING LOGIC ---
+            url = "https://script.google.com/macros/s/AKfycbxlwxg2pKi8ksSwzYtHiEIaNLGP3g4JEdAVHMdTxAIwFUKOrP2fNHP_RD02puJ9N9rh/exec"
+            data_params = {
+                "School_Name": custom_school_name,
+                "Days": ", ".join(days),
+                "Opening_Time": start_t.strftime("%H:%M"),
+                "Closing_Time": end_t.strftime("%H:%M"),
+                "Period_Duration": p_mins,
+                "Break_After": brk_after,
+                "Break_Duration": brk_mins,
+                "Log_Time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             }
-            url = "https://script.google.com/macros/s/AKfycbxptbYdW5fgflcSBbh1YDwLW8jRrQaQGaCTWOHE0VIwiD6T5SdEfIzLRva32H820ic5/exec"
-            
             try:
-                requests.post(url, params=params)
-                st.sidebar.success("Settings Saved & Synced!")
+                requests.post(url, params=data_params)
+                st.sidebar.success("Settings Saved & Synced to Cloud!")
             except:
-                st.sidebar.error("Saved locally, but Sync failed.")
+                st.sidebar.warning("Saved Locally (Cloud Sync Failed)")
+            # --- END DATA SENDING LOGIC ---
             
         if st.button("Logout", use_container_width=True):
             st.session_state['authenticated'] = False
