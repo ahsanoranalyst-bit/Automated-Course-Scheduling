@@ -17,7 +17,7 @@ def check_license():
         st.error(" LICENSE EXPIRED!")
         return False
     if not st.session_state['authenticated']:
-        st.title(" Enterprise Software Activation")
+        st.title(" Automated Course Scheduling Optimizer Activation")
         user_key = st.text_input("Enter Activation Key:", type="password")
         if st.button("Activate"):
             if user_key == MASTER_KEY:
@@ -190,4 +190,5 @@ if check_license():
                 st.table(df_t)
                 tp = create_pdf(custom_school_name, "TEACHER DUTY CHART", f"Teacher: {t}", df_t)
                 st.download_button(f" Print {t} PDF", tp, f"{t}.pdf", "application/pdf", key=f"tb_{t}")
+
 
