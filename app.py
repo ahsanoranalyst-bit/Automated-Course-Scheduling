@@ -3,20 +3,20 @@ import pandas as pd
 import random
 from datetime import datetime, timedelta
 from fpdf import FPDF
-import requests  # Added for Google Sheets connection
+import requests  # Added connection library
 
 # 1. Page Configuration
 st.set_page_config(page_title="School ERP Pro", layout="wide")
 
-# URL for Google Sheets Web App
-GSHEET_URL = "https://script.google.com/macros/s/AKfycbxiFyOz-wHJKkc08LYX4BqMXXa2QY_uI5K2m5QOxIZtyrStRfACXejphbasUYsCcZ0/exec"
+# Google Sheet Web App URL
+GSHEET_URL = "https://script.google.com/macros/s/AKfycbyeriN8s3mWZ74dEgXFQe7NrpLtEJZ5-rHARXx69t6_ocXvH01-2t7hiyu94knCb8g/exec"
 
 # Function to send data to Google Sheets
-def send_to_google_sheets(data):
+def sync_to_google_sheets(data):
     try:
-        response = requests.post(GSHEET_URL, json=data)
+        response = requests.post(GSHEET_URL, json=data, timeout=10)
         return response.status_code == 200
-    except:
+    except Exception:
         return False
 
 # 2. Security (Profit Level 200)
@@ -29,7 +29,7 @@ def check_license():
         st.error(" LICENSE EXPIRED!")
         return False
     if not st.session_state['authenticated']:
-        st.title(" Automated-Course-Scheduling Activation Optimization")
+        st.title(" Enterprise Software Activation")
         user_key = st.text_input("Enter Activation Key:", type="password")
         if st.button("Activate"):
             if user_key == MASTER_KEY:
@@ -82,16 +82,17 @@ if check_license():
         # --- SIDEBAR BUTTONS ---
         st.divider()
         if st.button("Save Configuration", use_container_width=True, type="primary"):
-            # Prepare data payload for Google Sheets
-            payload = {
-                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            # Data package for Google Sheets
+            config_data = {
                 "school_name": custom_school_name,
                 "days": ", ".join(days),
-                "timing": f"{start_t} to {end_t}",
-                "period_duration": p_mins
+                "timing": f"{start_t} - {end_t}",
+                "period_duration": p_mins,
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             }
-            # Execute connection
-            if send_to_google_sheets(payload):
+            
+            # Connection Logic
+            if sync_to_google_sheets(config_data):
                 st.sidebar.success("Settings Saved & Synced to Cloud!")
             else:
                 st.sidebar.warning("Settings Saved Locally (Sync Failed)")
