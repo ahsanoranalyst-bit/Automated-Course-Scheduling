@@ -6,6 +6,8 @@ google-cloud-firestore
 google-auth
 firebase-admin
 requests
+st-gsheets-connection
+pandas
 
 
 
