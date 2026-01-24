@@ -4,5 +4,6 @@ fpdf
 ortools
 google-cloud-firestore
 google-auth
+firebase-admin
 
 
