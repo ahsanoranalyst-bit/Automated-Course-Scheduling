@@ -1,4 +1,35 @@
 import streamlit as st
+from google.cloud import firestore
+from google.oauth2 import service_account
+import json
+
+# Initialize Firebase Connection
+if "db" not in st.session_state:
+    # 'textkey' is the name of your secret in Streamlit Cloud
+    key_dict = json.loads(st.secrets["textkey"])
+    creds = service_account.Credentials.from_service_account_info(key_dict)
+    st.session_state.db = firestore.Client(credentials=creds)
+
+db = st.session_state.db
+
+# Auto-Fetch Logic
+user_key = st.text_input("Ahsan123")
+
+if user_key:
+    doc_ref = db.collection("Projects").document(user_key)
+    doc = doc_ref.get()
+    if doc.exists:
+        st.session_state.project_data = doc.to_dict()
+        st.success("Existing data loaded automatically!")
+
+
+
+
+
+
+
+
+import streamlit as st
 import pandas as pd
 import random
 from datetime import datetime, timedelta
@@ -190,6 +221,25 @@ if check_license():
                 st.table(df_t)
                 tp = create_pdf(custom_school_name, "TEACHER DUTY CHART", f"Teacher: {t}", df_t)
                 st.download_button(f" Print {t} PDF", tp, f"{t}.pdf", "application/pdf", key=f"tb_{t}")
+
+
+
+
+# Save Button Logic
+if st.button("Save Data"):
+    if user_key:
+        # Define the data you want to store (Example: Profit Level 1-200)
+        data_to_store = {
+            "profit_level": 150, 
+            "status": "Updated"
+        }
+        
+        # Saves data under the document name of your License Key
+        db.collection("Projects").document(user_key).set(data_to_store)
+        st.success("Data successfully saved to Firebase!")
+    else:
+        st.error("Please enter a License Key before saving.")
+
 
 
 
