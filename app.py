@@ -1,4 +1,31 @@
+import streamlit as st
+from firebase_admin import firestore
 
+# 1. Initialize memory
+if 'user_data' not in st.session_state:
+    st.session_state.user_data = {}
+
+# 2. Universal Data Loader
+if st.session_state.get('logged_in') and st.session_state.get('license_key'):
+    try:
+        doc_ref = db.collection("registrations").document(st.session_state.license_key)
+        doc = doc_ref.get()
+        if doc.exists:
+            st.session_state.user_data = doc.to_dict()
+    except:
+        pass
+
+# 3. Function to get old values for boxes
+def get_old_val(key):
+    return st.session_state.user_data.get(key, "")
+
+# 4. Function to save data
+def sync_to_cloud(data_dict):
+    if st.session_state.get('license_key'):
+        doc_ref = db.collection("registrations").document(st.session_state.license_key)
+        doc_ref.set(data_dict, merge=True)
+        st.session_state.user_data.update(data_dict)
+        st.success("✅ Data Synced Successfully!")
 
 
 
@@ -195,6 +222,7 @@ if check_license():
                 st.table(df_t)
                 tp = create_pdf(custom_school_name, "TEACHER DUTY CHART", f"Teacher: {t}", df_t)
                 st.download_button(f" Print {t} PDF", tp, f"{t}.pdf", "application/pdf", key=f"tb_{t}")
+
 
 
 
