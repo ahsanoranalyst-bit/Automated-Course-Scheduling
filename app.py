@@ -1,101 +1,80 @@
+https://g.co/gemini/share/59b42771745d 
+
 import streamlit as st
 import firebase_admin
 from firebase_admin import credentials, firestore
 import json
 
-# 1. DATABASE CONNECTION
+# 1. Firebase Connection
 if not firebase_admin._apps:
     try:
         key_dict = json.loads(st.secrets["textkey"])
         creds = credentials.Certificate(key_dict)
         firebase_admin.initialize_app(creds)
     except Exception as e:
-        st.error(f"Firebase Connection Error: {e}")
+        st.error(f"Error: {e}")
 
 db = firestore.client()
 
-# 2. SESSION STATE INITIALIZATION
+# 2. Session Memory
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 if 'user_data' not in st.session_state:
     st.session_state.user_data = {}
 
-# 3. LOGIN SYSTEM
+# 3. Login Interface
 if not st.session_state.logged_in:
-    st.title("Project Login")
-    license_key = st.text_input("Enter License Key (Document ID):", type="password")
+    st.title("🔐 Login")
+    license_key = st.text_input("Enter Key:", type="password")
     
     if st.button("Login"):
-        # Check if project exists in 'Projects' collection
-        proj_ref = db.collection("Projects").document(license_key)
-        proj_doc = proj_ref.get()
-        
+        proj_doc = db.collection("Projects").document(license_key).get()
         if proj_doc.exists:
             st.session_state.logged_in = True
             st.session_state.license_key = license_key
-            
-            # --- AUTO-LOAD DATA FROM FIREBASE ---
-            # Fetching from 'registrations' where your subject/grade is saved
-            reg_ref = db.collection("registrations").document(license_key)
-            reg_doc = reg_ref.get()
-            if reg_doc.exists:
-                st.session_state.user_data = reg_doc.to_dict()
-            
-            st.success("Login Successful!")
+            # Load Data from 'registrations'
+            reg_doc = db.collection("registrations").document(license_key).get()
+            st.session_state.user_data = reg_doc.to_dict() if reg_doc.exists else {}
             st.rerun()
         else:
-            st.error("Invalid License Key. Please check Firebase.")
+            st.error("Invalid Key")
+    st.stop()
 
-# 4. MAIN APPLICATION (After Login)
-else:
-    st.sidebar.write(f"Active Project: **{st.session_state.license_key}**")
-    if st.sidebar.button("Logout"):
-        st.session_state.logged_in = False
-        st.rerun()
+# 4. Main App Interface
+st.sidebar.write(f"Key: {st.session_state.license_key}")
+if st.sidebar.button("Logout"):
+    st.session_state.logged_in = False
+    st.rerun()
 
-    st.title("Data Management Dashboard")
+st.title("📊 Project Dashboard")
 
-    # Fetching values from session_state (saved from Firebase)
-    existing_subject = st.session_state.user_data.get('subject', "")
-    existing_grade = st.session_state.user_data.get('grade', "")
+# Fetching values from memory
+saved_sub = st.session_state.user_data.get('subject', "")
+saved_grd = st.session_state.user_data.get('grade', "")
 
-    # DATA ENTRY SECTION
-    col1, col2 = st.columns(2)
-    with col1:
-        subject = st.text_input("Subject Name", value=existing_subject)
-    with col2:
-        grade = st.text_input("Grade Level", value=existing_grade)
+# Input Boxes (Will show saved data automatically)
+subject = st.text_input("Subject Name", value=saved_sub)
+grade = st.text_input("Grade Level", value=saved_grd)
 
-    # 5. UNIVERSAL SAVE BUTTON
-    if st.button("Save & Update"):
-        save_data = {
-            "subject": subject,
-            "grade": grade,
-            "project_id": st.session_state.license_key,
-            "status": "active"
-        }
-        
-        # Saving to 'registrations' using merge=True to prevent data loss
-        db.collection("registrations").document(st.session_state.license_key).set(save_data, merge=True)
-        
-        # Update local session memory
-        st.session_state.user_data = save_data
-        st.success("Data successfully saved to Firebase!")
+# 5. Save Button
+if st.button("💾 Save Data"):
+    save_ref = db.collection("registrations").document(st.session_state.license_key)
+    data = {
+        "subject": subject,
+        "grade": grade,
+        "last_updated": firestore.SERVER_TIMESTAMP
+    }
+    # merge=True protects other data like profit levels (1-200)
+    save_ref.set(data, merge=True)
+    st.session_state.user_data = data # Update local memory
+    st.success("Data successfully saved to Firebase!")
 
-    # 6. PERFORMANCE ANALYSIS (Section-Wise)
-    st.divider()
-    st.header("Section-Wise Performance")
-    
-    # Example logic for calculations based on saved data
-    if subject:
-        st.info(f"Analyzing data for {subject}...")
-        # Your existing calculation logic goes here
-        st.write("Primary Efficiency: **85%**")
-        st.write("Secondary Efficiency: **90%**")
-        st.write(f"Profit Level: **{st.session_state.user_data.get('profit_level', 150)}**")
-
-
-
+# 6. Analysis Section (Your calculations here)
+st.divider()
+st.subheader("Performance")
+# Example: Show profit level from Firebase if it exists
+profit = st.session_state.user_data.get('profit_level', "Not Set")
+st.write(f"Current Profit Level: **{profit}**")
 
 
 
@@ -292,6 +271,7 @@ if check_license():
                 st.table(df_t)
                 tp = create_pdf(custom_school_name, "TEACHER DUTY CHART", f"Teacher: {t}", df_t)
                 st.download_button(f" Print {t} PDF", tp, f"{t}.pdf", "application/pdf", key=f"tb_{t}")
+
 
 
 
