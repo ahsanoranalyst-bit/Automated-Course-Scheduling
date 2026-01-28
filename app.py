@@ -16,7 +16,7 @@ db = st.session_state.db
 user_key = st.text_input("Enter License Key")
 
 if user_key:
-    doc_ref = db.collection("Projects").document(Ahsan123)
+    doc_ref = db.collection("Projects").document(user_key)
     doc = doc_ref.get()
     if doc.exists:
         st.session_state.project_data = doc.to_dict()
@@ -239,6 +239,7 @@ if st.button("Save Data"):
         st.success("Data successfully saved to Firebase!")
     else:
         st.error("Please enter a License Key before saving.")
+
 
 
 
