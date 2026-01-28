@@ -1,47 +1,55 @@
 import streamlit as st
-from firebase_admin import firestore
+import pandas as pd
+import random
+from datetime import datetime, timedelta
+from fpdf import FPDF
+from firebase_admin import firestore, credentials, initialize_app, get_app
 
-# 1. Initialize memory
+# --- FIREBASE SETUP ---
+# Ensure you have initialized your firebase_admin app before this point in your environment
+try:
+    db = firestore.client()
+except Exception:
+    st.error("Firebase not initialized. Please check your service account settings.")
+
+# 1. Page Configuration
+st.set_page_config(page_title="Automated Course Scheduling Optimizer", layout="wide")
+
+# 2. Security & License Logic
+MASTER_KEY = "Ahsan123"
+EXPIRY_DATE = "2030-12-31"
+
+# --- 3. FIREBASE FUNCTIONS (LOAD/SAVE) ---
+
+def sync_to_cloud(data_dict):
+    """Saves all current inputs to Firestore."""
+    try:
+        doc_ref = db.collection("registrations").document(MASTER_KEY)
+        doc_ref.set(data_dict, merge=True)
+        st.session_state.user_data.update(data_dict)
+        return True
+    except Exception as e:
+        st.error(f"Sync Error: {e}")
+        return False
+
+# Initialize Memory
 if 'user_data' not in st.session_state:
     st.session_state.user_data = {}
 
-# 2. Universal Data Loader
-if st.session_state.get('logged_in') and st.session_state.get('license_key'):
+# Universal Data Loader
+if 'authenticated' in st.session_state and st.session_state['authenticated']:
     try:
-        doc_ref = db.collection("registrations").document(st.session_state.license_key)
+        doc_ref = db.collection("registrations").document(MASTER_KEY)
         doc = doc_ref.get()
         if doc.exists:
             st.session_state.user_data = doc.to_dict()
     except:
         pass
 
-# 3. Function to get old values for boxes
-def get_old_val(key):
-    return st.session_state.user_data.get(key, "")
+def get_old_val(key, default):
+    return st.session_state.user_data.get(key, default)
 
-# 4. Function to save data
-def sync_to_cloud(data_dict):
-    if st.session_state.get('license_key'):
-        doc_ref = db.collection("registrations").document(st.session_state.license_key)
-        doc_ref.set(data_dict, merge=True)
-        st.session_state.user_data.update(data_dict)
-        st.success("✅ Data Synced Successfully!")
-
-
-
-
-import streamlit as st
-import pandas as pd
-import random
-from datetime import datetime, timedelta
-from fpdf import FPDF
-
-# 1. Page Configuration
-st.set_page_config(page_title="Automated Course Scheduling Optimizer", layout="wide")
-
-# 2. Security (Profit Level 200)
-MASTER_KEY = "Ahsan123"
-EXPIRY_DATE = "2030-12-31"
+# --- ORIGINAL LOGIC CONTINUES ---
 
 def check_license():
     if 'authenticated' not in st.session_state: st.session_state['authenticated'] = False
@@ -59,7 +67,6 @@ def check_license():
         return False
     return True
 
-# 3. PDF Generator
 def create_pdf(school_name, header, sub, df):
     try:
         pdf = FPDF()
@@ -86,48 +93,81 @@ def create_pdf(school_name, header, sub, df):
         return pdf.output(dest='S').encode('latin-1')
     except: return None
 
-# 4. Main ERP Logic
 if check_license():
     with st.sidebar:
         st.header(" School Setup")
-        custom_school_name = st.text_input("Enter School Name:", "Global Excellence Academy")
+        custom_school_name = st.text_input("Enter School Name:", get_old_val("school_name", "Global Excellence Academy"))
         st.divider()
-        days = st.multiselect("Days", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
-        start_t = st.time_input("Open", datetime.strptime("08:00", "%H:%M"))
-        end_t = st.time_input("Close", datetime.strptime("14:00", "%H:%M"))
-        p_mins = st.number_input("Period Duration", 10, 120, 40)
-        brk_after = st.number_input("Break After Period", 1, 10, 4)
-        brk_mins = st.number_input("Break Mins", 10, 60, 30)
-       
-        # --- SIDEBAR BUTTONS ---
+        days = st.multiselect("Days", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], get_old_val("days", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]))
+        
+        # Helper to parse stored time strings back to datetime
+        def get_stored_time(key, default_str):
+            time_str = get_old_val(key, default_str)
+            return datetime.strptime(time_str, "%H:%M")
+
+        start_t = st.time_input("Open", get_stored_time("start_t", "08:00"))
+        end_t = st.time_input("Close", get_stored_time("end_t", "14:00"))
+        p_mins = st.number_input("Period Duration", 10, 120, get_old_val("p_mins", 40))
+        brk_after = st.number_input("Break After Period", 1, 10, get_old_val("brk_after", 4))
+        brk_mins = st.number_input("Break Mins", 10, 60, get_old_val("brk_mins", 30))
+        
         st.divider()
+        # MODIFIED SAVE BUTTON
         if st.button("Save Configuration", use_container_width=True, type="primary"):
-            st.sidebar.success("Settings Saved!")
-           
+            save_data = {
+                "school_name": custom_school_name,
+                "days": days,
+                "start_t": start_t.strftime("%H:%M"),
+                "end_t": end_t.strftime("%H:%M"),
+                "p_mins": p_mins,
+                "brk_after": brk_after,
+                "brk_mins": brk_mins,
+                "p_c_data": p_c_df.to_dict('records'),
+                "p_t_data": p_t_df.to_dict('records'),
+                "s_c_data": s_c_df.to_dict('records'),
+                "s_t_data": s_t_df.to_dict('records'),
+                "c_c_data": c_c_df.to_dict('records'),
+                "c_t_data": c_t_df.to_dict('records')
+            }
+            if sync_to_cloud(save_data):
+                st.sidebar.success("✅ Settings & Data Saved to Cloud!")
+            
         if st.button("Logout", use_container_width=True):
             st.session_state['authenticated'] = False
             st.rerun()
 
     st.title(f" {custom_school_name}")
-   
+    
     # Registration Tabs
     tab1, tab2, tab3 = st.tabs(["Primary Registration", "Secondary Registration", "College Registration"])
-   
+    
     with tab1:
         col1, col2 = st.columns([1, 2])
-        p_c_df = col1.data_editor(pd.DataFrame([{"Class": "Grade 1", "Sections": 1}]), num_rows="dynamic", key="p_c")
-        p_t_df = col2.data_editor(pd.DataFrame([{"Name": "", "Subject": ""}] * 5), num_rows="dynamic", key="p_t")
+        # Load saved table data or use defaults
+        p_c_val = pd.DataFrame(get_old_val("p_c_data", [{"Class": "Grade 1", "Sections": 1}]))
+        p_t_val = pd.DataFrame(get_old_val("p_t_data", [{"Name": "", "Subject": ""}] * 5))
+        
+        p_c_df = col1.data_editor(p_c_val, num_rows="dynamic", key="p_c")
+        p_t_df = col2.data_editor(p_t_val, num_rows="dynamic", key="p_t")
+
     with tab2:
         col1, col2 = st.columns([1, 2])
-        s_c_df = col1.data_editor(pd.DataFrame([{"Class": "Grade 9", "Sections": 1}]), num_rows="dynamic", key="s_c")
-        s_t_df = col2.data_editor(pd.DataFrame([{"Name": "", "Subject": ""}] * 5), num_rows="dynamic", key="s_t")
+        s_c_val = pd.DataFrame(get_old_val("s_c_data", [{"Class": "Grade 9", "Sections": 1}]))
+        s_t_val = pd.DataFrame(get_old_val("s_t_data", [{"Name": "", "Subject": ""}] * 5))
+        
+        s_c_df = col1.data_editor(s_c_val, num_rows="dynamic", key="s_c")
+        s_t_df = col2.data_editor(s_t_val, num_rows="dynamic", key="s_t")
+
     with tab3:
         col1, col2 = st.columns([1, 2])
-        c_c_df = col1.data_editor(pd.DataFrame([{"Class": "FSc-1", "Sections": 1}]), num_rows="dynamic", key="c_c")
-        c_t_df = col2.data_editor(pd.DataFrame([{"Name": "", "Subject": ""}] * 5), num_rows="dynamic", key="c_t")
+        c_c_val = pd.DataFrame(get_old_val("c_c_data", [{"Class": "FSc-1", "Sections": 1}]))
+        c_t_val = pd.DataFrame(get_old_val("c_t_data", [{"Name": "", "Subject": ""}] * 5))
+        
+        c_c_df = col1.data_editor(c_c_val, num_rows="dynamic", key="c_c")
+        c_t_df = col2.data_editor(c_t_val, num_rows="dynamic", key="c_t")
 
+    # --- REMAINING SCHEDULING LOGIC REMAINS THE SAME ---
     if st.button(" Run Analysis"):
-        # Processing Data
         def process_list(c_df, t_df):
             cls = []
             for _, r in c_df.iterrows():
@@ -140,7 +180,6 @@ if check_license():
         s_cls, s_tea = process_list(s_c_df, s_t_df)
         c_cls, c_tea = process_list(c_c_df, c_t_df)
 
-        # Slots
         slots = []
         curr = datetime.combine(datetime.today(), start_t)
         limit = datetime.combine(datetime.today(), end_t)
@@ -154,7 +193,6 @@ if check_license():
                 curr += timedelta(minutes=brk_mins)
             idx += 1
 
-        # Scheduling Logic
         master = {}; class_schedules = {}; stats = {"Primary": {"T":0, "F":0}, "Secondary": {"T":0, "F":0}, "College": {"T":0, "F":0}}
         all_sections = [{"id": "Primary", "c": p_cls, "t": p_tea}, {"id": "Secondary", "c": s_cls, "t": s_tea}, {"id": "College", "c": c_cls, "t": c_tea}]
 
@@ -175,11 +213,9 @@ if check_license():
                     day_plans[d] = slot_list
                 class_schedules[cls] = pd.DataFrame(day_plans, index=[s['time'] for s in slots])
 
-        # --- DISPLAY 1: ANALYTICS (TOP) ---
+        # Analysis UI...
         st.markdown("---")
         st.header(f" {custom_school_name}: Profit & Efficiency Analysis")
-       
-        # Total Stats
         m1, m2, m3 = st.columns(3)
         all_f = sum(x["F"] for x in stats.values()); all_t = sum(x["T"] for x in stats.values())
         eff = (all_f / all_t * 100) if all_t > 0 else 0
@@ -187,23 +223,18 @@ if check_license():
         m2.metric("Total Active Sections", len(class_schedules))
         m3.metric("Profit Status", "Optimized" if eff > 85 else "Action Required")
 
-        # --- FIXED SECTION PERFORMANCE IN ONE LINE ---
-        st.write("####  Section-Wise Performance (Primary | Secondary | College)")
+        st.write("#### Section-Wise Performance")
         s_col1, s_col2, s_col3 = st.columns(3)
-
         with s_col1:
             p_e = (stats["Primary"]["F"]/stats["Primary"]["T"]*100) if stats["Primary"]["T"] > 0 else 0
             st.info(f"**PRIMARY**\n\nEfficiency: {p_e:.1f}%\nVacancies: {stats['Primary']['T']-stats['Primary']['F']}")
-       
         with s_col2:
             s_e = (stats["Secondary"]["F"]/stats["Secondary"]["T"]*100) if stats["Secondary"]["T"] > 0 else 0
             st.info(f"**SECONDARY**\n\nEfficiency: {s_e:.1f}%\nVacancies: {stats['Secondary']['T']-stats['Secondary']['F']}")
-           
         with s_col3:
             c_e = (stats["College"]["F"]/stats["College"]["T"]*100) if stats["College"]["T"] > 0 else 0
             st.info(f"**COLLEGE**\n\nEfficiency: {c_e:.1f}%\nVacancies: {stats['College']['T']-stats['College']['F']}")
 
-        # --- DISPLAY 2: CLASS SCHEDULES ---
         st.markdown("---")
         st.header(" Student Class Schedules")
         for cls_name, df in class_schedules.items():
@@ -212,7 +243,6 @@ if check_license():
                 p = create_pdf(custom_school_name, "STUDENT TIMETABLE", f"Class: {cls_name}", df)
                 st.download_button(f" Print {cls_name} PDF", p, f"{cls_name}.pdf", "application/pdf", key=f"b_{cls_name}")
 
-        # --- DISPLAY 3: TEACHER DUTIES ---
         st.markdown("---")
         st.header(" Teacher Duty Charts")
         for t in (p_tea + s_tea + c_tea):
@@ -222,21 +252,3 @@ if check_license():
                 st.table(df_t)
                 tp = create_pdf(custom_school_name, "TEACHER DUTY CHART", f"Teacher: {t}", df_t)
                 st.download_button(f" Print {t} PDF", tp, f"{t}.pdf", "application/pdf", key=f"tb_{t}")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
