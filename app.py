@@ -1,84 +1,6 @@
 
 
 
-import streamlit as st
-import firebase_admin
-from firebase_admin import credentials, firestore
-import json
-
-# 1. FIREBASE CONNECTION (Do not change)
-if not firebase_admin._apps:
-    try:
-        key_dict = json.loads(st.secrets["textkey"])
-        creds = credentials.Certificate(key_dict)
-        firebase_admin.initialize_app(creds)
-    except Exception as e:
-        st.error(f"Connection Error: {e}")
-
-db = firestore.client()
-
-# 2. SESSION STATE (To remember data)
-if 'logged_in' not in st.session_state:
-    st.session_state.logged_in = False
-if 'user_data' not in st.session_state:
-    st.session_state.user_data = {}
-
-# 3. LOGIN INTERFACE
-if not st.session_state.logged_in:
-    st.title("Project Access")
-    license_key = st.text_input("Enter License Key:", type="password")
-    
-    if st.button("Login"):
-        proj_doc = db.collection("Projects").document(license_key).get()
-        if proj_doc.exists:
-            st.session_state.logged_in = True
-            st.session_state.license_key = license_key
-            # Fetch existing records from Firebase
-            reg_doc = db.collection("registrations").document(license_key).get()
-            st.session_state.user_data = reg_doc.to_dict() if reg_doc.exists else {}
-            st.rerun()
-        else:
-            st.error("Invalid Key!")
-    st.stop()
-
-# 4. MAIN DASHBOARD (Your Project Starts Here)
-st.sidebar.success(f"Connected: {st.session_state.license_key}")
-if st.sidebar.button("Logout"):
-    st.session_state.logged_in = False
-    st.rerun()
-
-st.title("Project Management")
-
-# --- STEP A: Fetch Saved Data ---
-# Use this for ANY variable you want to remember
-saved_value_1 = st.session_state.user_data.get('my_input_1', "")
-
-# --- STEP B: YOUR ORIGINAL UI & LOGIC HERE ---
-# Use 'value=saved_value_1' to show data after login
-user_input_1 = st.text_input("Enter your data here:", value=saved_value_1)
-
-# --- STEP C: THE UNIVERSAL SAVE BUTTON ---
-if st.button("Save to Firebase"):
-    # Put all your variables inside this dictionary
-    data_to_sync = {
-        "my_input_1": user_input_1,
-        "license_key": st.session_state.license_key,
-        "last_updated": firestore.SERVER_TIMESTAMP
-    }
-    
-    # Save with merge=True to protect profit_level (1-200) [cite: 2025-12-29]
-    db.collection("registrations").document(st.session_state.license_key).set(data_to_sync, merge=True)
-    st.session_state.user_data = data_to_sync
-    st.success("Data successfully saved and synced to cloud!")
-
-# --- STEP D: YOUR ANALYSIS SECTION ---
-st.divider()
-st.subheader("Performance Analysis")
-# Put your performance calculations here
-profit_val = st.session_state.user_data.get('profit_level', 1)
-st.write(f"Current Profit: **{profit_val}**")
-
-
 
 
 import streamlit as st
@@ -273,6 +195,7 @@ if check_license():
                 st.table(df_t)
                 tp = create_pdf(custom_school_name, "TEACHER DUTY CHART", f"Teacher: {t}", df_t)
                 st.download_button(f" Print {t} PDF", tp, f"{t}.pdf", "application/pdf", key=f"tb_{t}")
+
 
 
 
