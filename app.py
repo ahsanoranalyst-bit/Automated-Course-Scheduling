@@ -13,7 +13,7 @@ if "db" not in st.session_state:
 db = st.session_state.db
 
 # Auto-Fetch Logic
-user_key = st.text_input("Ahsan123")
+user_key = st.text_input("Enter License Key")
 
 if user_key:
     doc_ref = db.collection("Projects").document(user_key)
@@ -239,6 +239,7 @@ if st.button("Save Data"):
         st.success("Data successfully saved to Firebase!")
     else:
         st.error("Please enter a License Key before saving.")
+
 
 
 
