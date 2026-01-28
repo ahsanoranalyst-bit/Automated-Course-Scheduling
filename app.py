@@ -1,27 +1,98 @@
 import streamlit as st
-from google.cloud import firestore
-from google.oauth2 import service_account
+import firebase_admin
+from firebase_admin import credentials, firestore
 import json
 
-# Initialize Firebase Connection
-if "db" not in st.session_state:
-    # 'textkey' is the name of your secret in Streamlit Cloud
-    key_dict = json.loads(st.secrets["textkey"])
-    creds = service_account.Credentials.from_service_account_info(key_dict)
-    st.session_state.db = firestore.Client(credentials=creds)
+# 1. DATABASE CONNECTION
+if not firebase_admin._apps:
+    try:
+        key_dict = json.loads(st.secrets["textkey"])
+        creds = credentials.Certificate(key_dict)
+        firebase_admin.initialize_app(creds)
+    except Exception as e:
+        st.error(f"Firebase Connection Error: {e}")
 
-db = st.session_state.db
+db = firestore.client()
 
-# Auto-Fetch Logic
-user_key = st.text_input("Enter License Key")
+# 2. SESSION STATE INITIALIZATION
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
+if 'user_data' not in st.session_state:
+    st.session_state.user_data = {}
 
-if user_key:
-    doc_ref = db.collection("Projects").document(user_key)
-    doc = doc_ref.get()
-    if doc.exists:
-        st.session_state.project_data = doc.to_dict()
-        st.success("Existing data loaded automatically!")
+# 3. LOGIN SYSTEM
+if not st.session_state.logged_in:
+    st.title("Project Login")
+    license_key = st.text_input("Enter License Key (Document ID):", type="password")
+    
+    if st.button("Login"):
+        # Check if project exists in 'Projects' collection
+        proj_ref = db.collection("Projects").document(license_key)
+        proj_doc = proj_ref.get()
+        
+        if proj_doc.exists:
+            st.session_state.logged_in = True
+            st.session_state.license_key = license_key
+            
+            # --- AUTO-LOAD DATA FROM FIREBASE ---
+            # Fetching from 'registrations' where your subject/grade is saved
+            reg_ref = db.collection("registrations").document(license_key)
+            reg_doc = reg_ref.get()
+            if reg_doc.exists:
+                st.session_state.user_data = reg_doc.to_dict()
+            
+            st.success("Login Successful!")
+            st.rerun()
+        else:
+            st.error("Invalid License Key. Please check Firebase.")
 
+# 4. MAIN APPLICATION (After Login)
+else:
+    st.sidebar.write(f"Active Project: **{st.session_state.license_key}**")
+    if st.sidebar.button("Logout"):
+        st.session_state.logged_in = False
+        st.rerun()
+
+    st.title("Data Management Dashboard")
+
+    # Fetching values from session_state (saved from Firebase)
+    existing_subject = st.session_state.user_data.get('subject', "")
+    existing_grade = st.session_state.user_data.get('grade', "")
+
+    # DATA ENTRY SECTION
+    col1, col2 = st.columns(2)
+    with col1:
+        subject = st.text_input("Subject Name", value=existing_subject)
+    with col2:
+        grade = st.text_input("Grade Level", value=existing_grade)
+
+    # 5. UNIVERSAL SAVE BUTTON
+    if st.button("Save & Update"):
+        save_data = {
+            "subject": subject,
+            "grade": grade,
+            "project_id": st.session_state.license_key,
+            "status": "active"
+        }
+        
+        # Saving to 'registrations' using merge=True to prevent data loss
+        db.collection("registrations").document(st.session_state.license_key).set(save_data, merge=True)
+        
+        # Update local session memory
+        st.session_state.user_data = save_data
+        st.success("Data successfully saved to Firebase!")
+
+    # 6. PERFORMANCE ANALYSIS (Section-Wise)
+    st.divider()
+    st.header("Section-Wise Performance")
+    
+    # Example logic for calculations based on saved data
+    if subject:
+        st.info(f"Analyzing data for {subject}...")
+        # Your existing calculation logic goes here
+        st.write("Primary Efficiency: **85%**")
+        st.write("Secondary Efficiency: **90%**")
+        st.write(f"Profit Level: **{st.session_state.user_data.get('profit_level', 150)}**")
 
 
 
@@ -225,20 +296,7 @@ if check_license():
 
 
 
-# Save Button Logic
-if st.button("Save Data"):
-    if user_key:
-        # Define the data you want to store (Example: Profit Level 1-200)
-        data_to_store = {
-            "profit_level": 150, 
-            "status": "Updated"
-        }
-        
-        # Saves data under the document name of your License Key
-        db.collection("Projects").document(user_key).set(data_to_store)
-        st.success("Data successfully saved to Firebase!")
-    else:
-        st.error("Please enter a License Key before saving.")
+
 
 
 
