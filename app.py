@@ -1,27 +1,8 @@
 import streamlit as st
 import pandas as pd
 import random
-import json
-import os
 from datetime import datetime, timedelta
 from fpdf import FPDF
-
-# --- SAVE/LOAD SYSTEM ---
-def get_file_name(school_name):
-    clean_name = "".join([c for c in school_name if c.isalnum() or c in (' ', '_')]).rstrip()
-    return f"{clean_name.replace(' ', '_')}_data.json"
-
-def save_data(school_name, data_dict):
-    filename = get_file_name(school_name)
-    with open(filename, 'w') as f:
-        json.dump(data_dict, f)
-
-def load_data(school_name):
-    filename = get_file_name(school_name)
-    if os.path.exists(filename):
-        with open(filename, 'r') as f:
-            return json.load(f)
-    return None
 
 # 1. Page Configuration
 st.set_page_config(page_title="Automated Course Scheduling Optimizer", layout="wide")
@@ -77,94 +58,43 @@ def create_pdf(school_name, header, sub, df):
 if check_license():
     with st.sidebar:
         st.header(" School Setup")
-        # Initialize school name in session state for tracking
-        if 'school_name' not in st.session_state:
-            st.session_state['school_name'] = "Global Excellence Academy"
-            
-        custom_school_name = st.text_input("Enter School Name:", st.session_state['school_name'])
-        
-        # Load logic if school name changes or on first run
-        saved_data = load_data(custom_school_name)
-        
+        custom_school_name = st.text_input("Enter School Name:", "Global Excellence Academy")
         st.divider()
-        
-        # Default values from saved file if available
-        d_days = saved_data.get('days', ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]) if saved_data else ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
-        d_open = datetime.strptime(saved_data.get('open', "08:00"), "%H:%M") if saved_data else datetime.strptime("08:00", "%H:%M")
-        d_close = datetime.strptime(saved_data.get('close', "14:00"), "%H:%M") if saved_data else datetime.strptime("14:00", "%H:%M")
-        d_dur = saved_data.get('duration', 40) if saved_data else 40
-        d_brk_a = saved_data.get('brk_after', 4) if saved_data else 4
-        d_brk_m = saved_data.get('brk_mins', 30) if saved_data else 30
-
-        days = st.multiselect("Days", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], d_days)
-        start_t = st.time_input("Open", d_open)
-        end_t = st.time_input("Close", d_close)
-        p_mins = st.number_input("Period Duration", 10, 120, d_dur)
-        brk_after = st.number_input("Break After Period", 1, 10, d_brk_a)
-        brk_mins = st.number_input("Break Mins", 10, 60, d_brk_m)
-        
+        days = st.multiselect("Days", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
+        start_t = st.time_input("Open", datetime.strptime("08:00", "%H:%M"))
+        end_t = st.time_input("Close", datetime.strptime("14:00", "%H:%M"))
+        p_mins = st.number_input("Period Duration", 10, 120, 40)
+        brk_after = st.number_input("Break After Period", 1, 10, 4)
+        brk_mins = st.number_input("Break Mins", 10, 60, 30)
+       
         # --- SIDEBAR BUTTONS ---
         st.divider()
         if st.button("Save Configuration", use_container_width=True, type="primary"):
-            # Prepare data package for saving
-            current_state = {
-                "days": days,
-                "open": start_t.strftime("%H:%M"),
-                "close": end_t.strftime("%H:%M"),
-                "duration": p_mins,
-                "brk_after": brk_after,
-                "brk_mins": brk_mins,
-                "p_c": p_c_df.to_dict('records'),
-                "p_t": p_t_df.to_dict('records'),
-                "s_c": s_c_df.to_dict('records'),
-                "s_t": s_t_df.to_dict('records'),
-                "c_c": c_c_df.to_dict('records'),
-                "c_t": c_t_df.to_dict('records')
-            }
-            save_data(custom_school_name, current_state)
-            st.sidebar.success(f"Settings Saved to {get_file_name(custom_school_name)}!")
-            
+            st.sidebar.success("Settings Saved!")
+           
         if st.button("Logout", use_container_width=True):
             st.session_state['authenticated'] = False
             st.rerun()
 
     st.title(f" {custom_school_name}")
-    
+   
     # Registration Tabs
     tab1, tab2, tab3 = st.tabs(["Primary Registration", "Secondary Registration", "College Registration"])
-    
-    # Load Table Data if exists
-    def_p_c = saved_data.get('p_c', [{"Class": "Grade 1", "Sections": 1}]) if saved_data else [{"Class": "Grade 1", "Sections": 1}]
-    def_p_t = saved_data.get('p_t', [{"Name": "", "Subject": ""}] * 5) if saved_data else [{"Name": "", "Subject": ""}] * 5
-    def_s_c = saved_data.get('s_c', [{"Class": "Grade 9", "Sections": 1}]) if saved_data else [{"Class": "Grade 9", "Sections": 1}]
-    def_s_t = saved_data.get('s_t', [{"Name": "", "Subject": ""}] * 5) if saved_data else [{"Name": "", "Subject": ""}] * 5
-    def_c_c = saved_data.get('c_c', [{"Class": "FSc-1", "Sections": 1}]) if saved_data else [{"Class": "FSc-1", "Sections": 1}]
-    def_c_t = saved_data.get('c_t', [{"Name": "", "Subject": ""}] * 5) if saved_data else [{"Name": "", "Subject": ""}] * 5
-
+   
     with tab1:
         col1, col2 = st.columns([1, 2])
-        p_c_df = col1.data_editor(pd.DataFrame(def_p_c), num_rows="dynamic", key="p_c")
-        p_t_df = col2.data_editor(pd.DataFrame(def_p_t), num_rows="dynamic", key="p_t")
+        p_c_df = col1.data_editor(pd.DataFrame([{"Class": "Grade 1", "Sections": 1}]), num_rows="dynamic", key="p_c")
+        p_t_df = col2.data_editor(pd.DataFrame([{"Name": "", "Subject": ""}] * 5), num_rows="dynamic", key="p_t")
     with tab2:
         col1, col2 = st.columns([1, 2])
-        s_c_df = col1.data_editor(pd.DataFrame(def_s_c), num_rows="dynamic", key="s_c")
-        s_t_df = col2.data_editor(pd.DataFrame(def_s_t), num_rows="dynamic", key="s_t")
+        s_c_df = col1.data_editor(pd.DataFrame([{"Class": "Grade 9", "Sections": 1}]), num_rows="dynamic", key="s_c")
+        s_t_df = col2.data_editor(pd.DataFrame([{"Name": "", "Subject": ""}] * 5), num_rows="dynamic", key="s_t")
     with tab3:
         col1, col2 = st.columns([1, 2])
-        c_c_df = col1.data_editor(pd.DataFrame(def_c_c), num_rows="dynamic", key="c_c")
-        c_t_df = col2.data_editor(pd.DataFrame(def_c_t), num_rows="dynamic", key="c_t")
+        c_c_df = col1.data_editor(pd.DataFrame([{"Class": "FSc-1", "Sections": 1}]), num_rows="dynamic", key="c_c")
+        c_t_df = col2.data_editor(pd.DataFrame([{"Name": "", "Subject": ""}] * 5), num_rows="dynamic", key="c_t")
 
     if st.button(" Run Analysis"):
-        # Auto-save before running analysis
-        current_state = {
-            "days": days, "open": start_t.strftime("%H:%M"), "close": end_t.strftime("%H:%M"),
-            "duration": p_mins, "brk_after": brk_after, "brk_mins": brk_mins,
-            "p_c": p_c_df.to_dict('records'), "p_t": p_t_df.to_dict('records'),
-            "s_c": s_c_df.to_dict('records'), "s_t": s_t_df.to_dict('records'),
-            "c_c": c_c_df.to_dict('records'), "c_t": c_t_df.to_dict('records')
-        }
-        save_data(custom_school_name, current_state)
-
         # Processing Data
         def process_list(c_df, t_df):
             cls = []
@@ -216,7 +146,7 @@ if check_license():
         # --- DISPLAY 1: ANALYTICS (TOP) ---
         st.markdown("---")
         st.header(f" {custom_school_name}: Profit & Efficiency Analysis")
-        
+       
         # Total Stats
         m1, m2, m3 = st.columns(3)
         all_f = sum(x["F"] for x in stats.values()); all_t = sum(x["T"] for x in stats.values())
@@ -232,11 +162,11 @@ if check_license():
         with s_col1:
             p_e = (stats["Primary"]["F"]/stats["Primary"]["T"]*100) if stats["Primary"]["T"] > 0 else 0
             st.info(f"**PRIMARY**\n\nEfficiency: {p_e:.1f}%\nVacancies: {stats['Primary']['T']-stats['Primary']['F']}")
-        
+       
         with s_col2:
             s_e = (stats["Secondary"]["F"]/stats["Secondary"]["T"]*100) if stats["Secondary"]["T"] > 0 else 0
             st.info(f"**SECONDARY**\n\nEfficiency: {s_e:.1f}%\nVacancies: {stats['Secondary']['T']-stats['Secondary']['F']}")
-            
+           
         with s_col3:
             c_e = (stats["College"]["F"]/stats["College"]["T"]*100) if stats["College"]["T"] > 0 else 0
             st.info(f"**COLLEGE**\n\nEfficiency: {c_e:.1f}%\nVacancies: {stats['College']['T']-stats['College']['F']}")
